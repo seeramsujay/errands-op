@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="title desc">
+  <title id="title">errands-op - Overpowered Errand Engine</title>
+  <desc id="desc">Algorithmic errand optimizer with Home Assistant sync, Hybrid VRPTW solver, dual-ring geofencing, and learned in-store aisle walk order DAGs.</desc>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="50%" stop-color="#090D1A"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="indigoTeal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#14B8A6"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0F172A" stop-opacity="0.98"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1200" height="400" rx="20" fill="url(#bgGrad)"/>
+  <rect width="1198" height="398" x="1" y="1" rx="19" fill="none" stroke="#334155" stroke-width="1.5" stroke-opacity="0.6"/>
+
+  <!-- Subtle Coordinate Grid Background Lines -->
+  <g stroke="#1E293B" stroke-width="1" stroke-dasharray="4 8" opacity="0.4">
+    <line x1="50" y1="80" x2="1150" y2="80"/>
+    <line x1="50" y1="160" x2="1150" y2="160"/>
+    <line x1="50" y1="240" x2="1150" y2="240"/>
+    <line x1="50" y1="320" x2="1150" y2="320"/>
+    <line x1="680" y1="40" x2="680" y2="360"/>
+  </g>
+
+  <!-- LEFT COLUMN: Identity & Core Value -->
+  <g transform="translate(60, 48)">
+    <!-- Eyebrow Badge -->
+    <rect width="250" height="28" rx="14" fill="#1E293B" stroke="#6366F1" stroke-width="1.2"/>
+    <circle cx="16" cy="14" r="5" fill="#14B8A6"/>
+    <text x="32" y="19" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" font-weight="700" letter-spacing="1">HYBRID VRPTW &amp; HA SYNC</text>
+
+    <!-- Main Project Name -->
+    <text x="0" y="86" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="52" font-weight="900" letter-spacing="-1.5">
+      errands<tspan fill="url(#indigoTeal)">-op</tspan>
+    </text>
+
+    <!-- Value Statement -->
+    <text x="0" y="128" fill="#F1F5F9" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="20" font-weight="600">
+      The Overpowered Errand Engine
+    </text>
+    <text x="0" y="156" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" font-weight="400">
+      Non-destructive overlays, hard sequence pins, perishable thermal
+    </text>
+    <text x="0" y="178" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" font-weight="400">
+      decay deferral, and empirical in-store aisle walk order learning.
+    </text>
+
+    <!-- Operational Spec Tags -->
+    <g transform="translate(0, 206)">
+      <rect width="146" height="34" rx="8" fill="#1E293B" stroke="#475569" stroke-width="1"/>
+      <text x="14" y="22" fill="#E2E8F0" font-family="ui-monospace, monospace" font-size="12" font-weight="600">τ = 1.28 Tortuosity</text>
+
+      <rect x="156" width="162" height="34" rx="8" fill="#1E293B" stroke="#475569" stroke-width="1"/>
+      <text x="170" y="22" fill="#38BDF8" font-family="ui-monospace, monospace" font-size="12" font-weight="600">γ = 250 Thermal Cost</text>
+
+      <rect x="328" width="176" height="34" rx="8" fill="#1E293B" stroke="#475569" stroke-width="1"/>
+      <text x="342" y="22" fill="#34D399" font-family="ui-monospace, monospace" font-size="12" font-weight="600">40m / 80m Hysteresis</text>
+    </g>
+
+    <!-- Live Status Pill -->
+    <g transform="translate(0, 260)">
+      <rect width="320" height="36" rx="10" fill="#0A101D" stroke="#334155" stroke-width="1"/>
+      <circle cx="18" cy="18" r="4.5" fill="#10B981"/>
+      <text x="34" y="23" fill="#E2E8F0" font-family="ui-monospace, monospace" font-size="12">HA: Connected · LWW-HLC Sync Ready</text>
+    </g>
+  </g>
+
+  <!-- RIGHT COLUMN: Interactive Engine Proof Card -->
+  <g transform="translate(710, 36)">
+    <!-- Main Card Body -->
+    <rect width="430" height="328" rx="16" fill="url(#cardGrad)" stroke="#334155" stroke-width="1.5"/>
+
+    <!-- Terminal Header / Title -->
+    <rect width="430" height="42" rx="16" fill="#1E293B"/>
+    <rect width="430" height="1" y="42" fill="#334155"/>
+    <circle cx="24" cy="21" r="5" fill="#EF4444" opacity="0.8"/>
+    <circle cx="40" cy="21" r="5" fill="#F59E0B" opacity="0.8"/>
+    <circle cx="56" cy="21" r="5" fill="#10B981" opacity="0.8"/>
+    <text x="80" y="26" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="12" font-weight="600">SOLVER ITINERARY · 3 STOPS</text>
+
+    <!-- Simulated Map / Route Canvas -->
+    <g transform="translate(20, 56)">
+      <!-- Outer geofence boundary -->
+      <circle cx="70" cy="70" r="58" fill="none" stroke="#6366F1" stroke-width="1" stroke-dasharray="4 4" opacity="0.3"/>
+      <!-- Inner geofence boundary -->
+      <circle cx="70" cy="70" r="28" fill="#6366F1" fill-opacity="0.12" stroke="#6366F1" stroke-width="1.5" opacity="0.7"/>
+
+      <!-- Connecting Trajectory Polyline -->
+      <path d="M 70,70 L 180,45 L 295,95" fill="none" stroke="#14B8A6" stroke-width="2.5" stroke-linecap="round"/>
+
+      <!-- Stop 1 (Depot/Start) -->
+      <circle cx="70" cy="70" r="8" fill="#6366F1"/>
+      <circle cx="70" cy="70" r="3" fill="#FFFFFF"/>
+      <rect x="46" y="86" width="48" height="18" rx="4" fill="#020617" stroke="#334155" stroke-width="0.8"/>
+      <text x="52" y="99" fill="#E2E8F0" font-family="-apple-system, sans-serif" font-size="10" font-weight="bold">START</text>
+
+      <!-- Stop 2 (Pinned Hard Lock) -->
+      <circle cx="180" cy="45" r="8" fill="#F59E0B"/>
+      <circle cx="180" cy="45" r="3" fill="#FFFFFF"/>
+      <rect x="142" y="12" width="76" height="20" rx="4" fill="#020617" stroke="#F59E0B" stroke-width="1"/>
+      <text x="148" y="26" fill="#F59E0B" font-family="-apple-system, sans-serif" font-size="10" font-weight="bold">📌 PINNED #1</text>
+
+      <!-- Stop 3 (Perishable Final Leg) -->
+      <circle cx="295" cy="95" r="8" fill="#06B6D4"/>
+      <circle cx="295" cy="95" r="3" fill="#FFFFFF"/>
+      <rect x="250" y="112" width="100" height="20" rx="4" fill="#020617" stroke="#06B6D4" stroke-width="1"/>
+      <text x="256" y="126" fill="#38BDF8" font-family="-apple-system, sans-serif" font-size="10" font-weight="bold">❄️ FINAL LEG (COLD)</text>
+    </g>
+
+    <!-- In-Store DAG Order Preview Bar -->
+    <g transform="translate(20, 215)">
+      <rect width="390" height="92" rx="10" fill="#020617" stroke="#334155" stroke-width="1"/>
+      <text x="14" y="24" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="11" font-weight="bold">LEARNED IN-STORE DAG (KAHN'S TOPOSORT)</text>
+      
+      <!-- Aisle order tokens -->
+      <g transform="translate(14, 38)">
+        <rect width="66" height="24" rx="4" fill="#1E293B" stroke="#475569" stroke-width="0.8"/>
+        <text x="10" y="16" fill="#F1F5F9" font-family="-apple-system, sans-serif" font-size="11">Produce</text>
+
+        <text x="76" y="16" fill="#6366F1" font-weight="bold">→</text>
+
+        <rect x="94" width="60" height="24" rx="4" fill="#1E293B" stroke="#475569" stroke-width="0.8"/>
+        <text x="102" y="16" fill="#F1F5F9" font-family="-apple-system, sans-serif" font-size="11">Bakery</text>
+
+        <text x="164" y="16" fill="#6366F1" font-weight="bold">→</text>
+
+        <rect x="182" width="60" height="24" rx="4" fill="#1E293B" stroke="#475569" stroke-width="0.8"/>
+        <text x="190" y="16" fill="#F1F5F9" font-family="-apple-system, sans-serif" font-size="11">Pantry</text>
+
+        <text x="252" y="16" fill="#6366F1" font-weight="bold">→</text>
+
+        <rect x="270" width="102" height="24" rx="4" fill="#0E2F3D" stroke="#06B6D4" stroke-width="1"/>
+        <text x="276" y="16" fill="#38BDF8" font-family="-apple-system, sans-serif" font-size="11" font-weight="bold">❄️ Dairy / Cold</text>
+      </g>
+      <text x="14" y="78" fill="#10B981" font-family="ui-monospace, monospace" font-size="10">✓ Feedback Arc Set: 0 directed cycles detected</text>
+    </g>
+  </g>
+</svg>
