@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../data/models/todo_item.dart';
-import '../../services/geofence_engine.dart';
+import '../../core/categories.dart';
+import '../../data/models/store.dart';
 import '../../state/app_state.dart';
 
 class InStoreScreen extends StatefulWidget {
@@ -12,49 +12,50 @@ class InStoreScreen extends StatefulWidget {
 }
 
 class _InStoreScreenState extends State<InStoreScreen> {
-  List<TodoItem>? _walkOrderedItems;
-  bool _loading = true;
+  // Walk order (item ids) computed on entry; check-offs don't reshuffle it.
+  List<String>? _walkOrder;
+  String? _loadedForStoreId;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadWalkOrder();
-  }
-
-  Future<void> _loadWalkOrder() async {
-    final state = context.read<AppState>();
-    final store = state.activeStore ?? (state.stores.isNotEmpty ? state.stores.first : null);
-    if (store != null) {
-      final items = await state.getInStoreWalkOrderItems(store);
-      if (mounted) {
-        setState(() {
-          _walkOrderedItems = items;
-          _loading = false;
-        });
-      }
-    } else {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
-    }
+  Future<void> _loadWalkOrder(Store store) async {
+    _loadedForStoreId = store.id;
+    final items = await context.read<AppState>().getInStoreWalkOrderItems(store);
+    if (!mounted) return;
+    setState(() => _walkOrder = items.map((i) => i.id).toList());
   }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    final store = state.activeStore ?? (state.stores.isNotEmpty ? state.stores.first : null);
+    final store = state.activeStore;
 
     if (store == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('In-Store Mode')),
-        body: const Center(child: Text('No active store detected.')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'You are not inside a store right now. In-Store Mode starts automatically after '
+              'a couple of minutes at a store with Live GPS on.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white54),
+            ),
+          ),
+        ),
       );
     }
 
-    final allStoreItems = state.items.where((i) {
-      return store.supportedCategories.contains(i.category) ||
-          store.supportedCategories.contains('generic');
-    }).toList();
+    if (_loadedForStoreId != store.id) {
+      _walkOrder = null;
+      _loadWalkOrder(store);
+    }
+
+    final byId = {for (final i in state.items) i.id: i};
+    final allStoreItems = [
+      for (final id in _walkOrder ?? const <String>[])
+        if (byId[id] != null) byId[id]!,
+    ];
+    final loading = _walkOrder == null;
 
     final completedCount = allStoreItems.where((i) => i.isCompleted).length;
     final totalCount = allStoreItems.length;
@@ -84,7 +85,7 @@ class _InStoreScreenState extends State<InStoreScreen> {
           ),
         ],
       ),
-      body: _loading
+      body: loading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
@@ -146,7 +147,7 @@ class _InStoreScreenState extends State<InStoreScreen> {
 
                 // Item Check-Off List
                 Expanded(
-                  child: (_walkOrderedItems == null || _walkOrderedItems!.isEmpty)
+                  child: allStoreItems.isEmpty
                       ? const Center(
                           child: Text(
                             'No items to pick at this store!',
@@ -155,9 +156,9 @@ class _InStoreScreenState extends State<InStoreScreen> {
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.all(12),
-                          itemCount: _walkOrderedItems!.length,
+                          itemCount: allStoreItems.length,
                           itemBuilder: (context, index) {
-                            final item = _walkOrderedItems![index];
+                            final item = allStoreItems[index];
                             final isDone = item.isCompleted;
 
                             return Card(
@@ -167,10 +168,7 @@ class _InStoreScreenState extends State<InStoreScreen> {
                                 leading: Checkbox(
                                   value: isDone,
                                   activeColor: const Color(0xFF14B8A6),
-                                  onChanged: (_) async {
-                                    await state.toggleItemCompleted(item.id);
-                                    await _loadWalkOrder();
-                                  },
+                                  onChanged: (_) => state.toggleItemCompleted(item.id),
                                 ),
                                 title: Text(
                                   item.summary,
@@ -185,11 +183,11 @@ class _InStoreScreenState extends State<InStoreScreen> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.06),
+                                        color: Colors.white.withValues(alpha: 0.06),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
-                                        'Aisle: ${item.category}',
+                                        ItemCategories.labelFor(item.category),
                                         style: const TextStyle(fontSize: 10, color: Colors.white70),
                                       ),
                                     ),
@@ -200,7 +198,7 @@ class _InStoreScreenState extends State<InStoreScreen> {
                                   ],
                                 ),
                                 trailing: Text(
-                                  'Aisle #${index + 1}',
+                                  '#${index + 1}',
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,

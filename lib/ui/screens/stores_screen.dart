@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/categories.dart';
 import '../../data/models/store_layout_edge.dart';
 import '../../state/app_state.dart';
+import 'store_editor_screen.dart';
 
 class StoresScreen extends StatefulWidget {
   const StoresScreen({super.key});
@@ -27,7 +29,8 @@ class _StoresScreenState extends State<StoresScreen> {
 
   Future<void> _selectStore(String storeId) async {
     final state = context.read<AppState>();
-    final edges = await state.database.getLayoutEdges(storeId);
+    final edges = await state.layoutLearningEngine.getLearnedDag(storeId);
+    if (!mounted) return;
     setState(() {
       _selectedStoreId = storeId;
       _edges = edges;
@@ -37,14 +40,34 @@ class _StoresScreenState extends State<StoresScreen> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    if (_selectedStoreId != null && !state.stores.any((s) => s.id == _selectedStoreId)) {
+      _selectedStoreId = null;
+      _edges = [];
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Stores & Layout Learning', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'add_store',
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const StoreEditorScreen()),
+        ),
+        icon: const Icon(Icons.add_business),
+        label: const Text('Add Store'),
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
+          if (state.stores.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Text(
+                'No stores yet. Add the shops and offices you use so the route planner can send items there.',
+                style: TextStyle(color: Colors.white54),
+              ),
+            ),
           const Text(
             'Candidate Stores & Time Windows',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
@@ -83,19 +106,24 @@ class _StoresScreenState extends State<StoresScreen> {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.06),
+                            color: Colors.white.withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Text(c, style: const TextStyle(fontSize: 10, color: Colors.white54)),
+                          child: Text(
+                            ItemCategories.labelFor(c),
+                            style: const TextStyle(fontSize: 10, color: Colors.white54),
+                          ),
                         );
                       }).toList(),
                     ),
                   ],
                 ),
                 trailing: IconButton(
-                  icon: const Icon(Icons.hub_outlined, color: Color(0xFF818CF8)),
-                  tooltip: 'View Layout Graph',
-                  onPressed: () => _selectStore(store.id),
+                  icon: const Icon(Icons.edit_outlined, color: Color(0xFF818CF8)),
+                  tooltip: 'Edit store',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => StoreEditorScreen(store: store)),
+                  ),
                 ),
                 onTap: () => _selectStore(store.id),
               ),
@@ -118,7 +146,7 @@ class _StoresScreenState extends State<StoresScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.2),
+                  color: const Color(0xFF10B981).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
@@ -130,7 +158,7 @@ class _StoresScreenState extends State<StoresScreen> {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Edges represent empirical aisle walking order derived from check-off time deltas with exponential decay.',
+            'Net walking order learned from check-off times (exponential decay); conflicting observations cancel out and remaining cycles are cut.',
             style: TextStyle(fontSize: 12, color: Colors.white54),
           ),
           const SizedBox(height: 12),
@@ -165,7 +193,7 @@ class _StoresScreenState extends State<StoresScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withOpacity(0.2),
+                        color: const Color(0xFF6366F1).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -183,7 +211,7 @@ class _StoresScreenState extends State<StoresScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF14B8A6).withOpacity(0.2),
+                        color: const Color(0xFF14B8A6).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -200,12 +228,8 @@ class _StoresScreenState extends State<StoresScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'Weight: ${(edge.forwardWeight * 100).toStringAsFixed(0)}%',
+                          'Evidence: ${edge.forwardWeight.toStringAsFixed(2)}',
                           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white70),
-                        ),
-                        Text(
-                          'n = ${edge.sampleSize} visits',
-                          style: const TextStyle(fontSize: 10, color: Colors.white38),
                         ),
                       ],
                     ),

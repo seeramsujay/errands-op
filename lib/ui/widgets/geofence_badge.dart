@@ -23,25 +23,25 @@ class GeofenceBadge extends StatelessWidget {
 
     switch (state) {
       case GeofenceState.outsideStore:
-        bg = Colors.white.withOpacity(0.06);
-        border = Colors.white.withOpacity(0.15);
+        bg = Colors.white.withValues(alpha: 0.06);
+        border = Colors.white.withValues(alpha: 0.15);
         icon = Icons.location_on_outlined;
         label = 'En Route';
         break;
       case GeofenceState.pendingEntry:
-        bg = const Color(0xFFF59E0B).withOpacity(0.18);
+        bg = const Color(0xFFF59E0B).withValues(alpha: 0.18);
         border = const Color(0xFFF59E0B);
         icon = Icons.timer_outlined;
         label = 'Dwell ${dwellSeconds}s / 120s (${activeStore?.name ?? "Store"})';
         break;
       case GeofenceState.insideStore:
-        bg = const Color(0xFF10B981).withOpacity(0.2);
+        bg = const Color(0xFF10B981).withValues(alpha: 0.2);
         border = const Color(0xFF10B981);
         icon = Icons.storefront;
         label = 'Inside: ${activeStore?.name ?? "Store"}';
         break;
       case GeofenceState.pendingExit:
-        bg = const Color(0xFFEF4444).withOpacity(0.18);
+        bg = const Color(0xFFEF4444).withValues(alpha: 0.18);
         border = const Color(0xFFEF4444);
         icon = Icons.exit_to_app;
         label = 'Exit Grace: 180s (${activeStore?.name ?? "Store"})';

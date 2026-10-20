@@ -1,7 +1,7 @@
 import 'dart:math';
 
 /// Hybrid Logical Clock (HLC) implementation for monotonic, causal timestamping.
-/// Format: <physical_ms>:<counter>:<node_id>
+/// Format: `<physical_ms>:<counter>:<node_id>`
 class HlcTimestamp implements Comparable<HlcTimestamp> {
   final int physicalTime; // Milliseconds since epoch
   final int counter;
@@ -62,7 +62,8 @@ class HlcTimestamp implements Comparable<HlcTimestamp> {
 
 /// Hybrid Logical Clock manager instance
 class HybridLogicalClock {
-  final String nodeId;
+  // Mutable so a persisted per-device id can be applied after startup.
+  String nodeId;
   int _lastPhysicalTime = 0;
   int _counter = 0;
 

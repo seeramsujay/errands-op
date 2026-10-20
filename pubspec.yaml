@@ -1,5 +1,5 @@
 name: op_list
-description: "A new Flutter project."
+description: "Offline-first errand router: Home Assistant to-do sync, VRPTW route planning, geofenced in-store mode and learned aisle order."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -43,6 +43,8 @@ dependencies:
   sqflite_common_ffi: ^2.4.3
   path: ^1.9.1
   provider: ^6.1.5+1
+  path_provider: ^2.1.6
+  geolocator: ^14.1.2
 
 dev_dependencies:
   flutter_test:

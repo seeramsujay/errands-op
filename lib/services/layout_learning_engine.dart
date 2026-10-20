@@ -1,10 +1,16 @@
 import 'dart:math';
+import 'package:uuid/uuid.dart';
 import '../core/constants.dart';
 import '../data/database/app_database.dart';
 import '../data/models/store_layout_edge.dart';
 import '../data/models/visit.dart';
 
 /// In-Store Walk-Order Precedence Learning Engine
+///
+/// The database keeps raw precedence *evidence* per store (both directions of
+/// a pair may exist). The DAG is derived when reading: opposite directions
+/// cancel out, remaining cycles are broken with a greedy Feedback Arc Set,
+/// and Kahn's algorithm produces the walk order.
 class LayoutLearningEngine {
   final AppDatabase database;
 
@@ -15,77 +21,103 @@ class LayoutLearningEngine {
     required String visitId,
     required String itemId,
     required String itemCategory,
+    DateTime? at,
   }) async {
     final checkoff = VisitCheckoff(
-      id: 'chk_${DateTime.now().millisecondsSinceEpoch}_$itemId',
+      id: const Uuid().v4(),
       visitId: visitId,
       itemId: itemId,
       itemCategory: itemCategory,
-      checkoffTimestamp: DateTime.now(),
+      checkoffTimestamp: at ?? DateTime.now(),
     );
     await database.insertCheckoff(checkoff);
   }
 
-  /// Rebuild precedence matrix, break cycles via Feedback Arc Set,
-  /// and update DAG edges upon visit completion.
+  /// Un-ticking an item in the store means it wasn't picked at that point.
+  Future<void> retractCheckoff({required String visitId, required String itemId}) {
+    return database.deleteCheckoff(visitId, itemId);
+  }
+
+  /// Fold this visit's check-off sequence into the store's precedence evidence.
   Future<void> processCompletedVisit({
     required String storeId,
     required String visitId,
   }) async {
     final checkoffs = await database.getCheckoffsForVisit(visitId);
-    if (checkoffs.length < 2) return;
 
-    // Load existing layout edges for this store
+    // Collapse to one timestamp per category (first pick), so five dairy
+    // items don't count as five observations of every dairy pair.
+    final firstPick = <String, DateTime>{};
+    for (final c in checkoffs) {
+      final prev = firstPick[c.itemCategory];
+      if (prev == null || c.checkoffTimestamp.isBefore(prev)) {
+        firstPick[c.itemCategory] = c.checkoffTimestamp;
+      }
+    }
+    if (firstPick.length < 2) return;
+    final sequence = firstPick.entries.toList()..sort((a, b) => a.value.compareTo(b.value));
+
     final existingEdges = await database.getLayoutEdges(storeId);
     final edgeMap = <String, StoreLayoutEdge>{
       for (final e in existingEdges) '${e.fromItemCategory}->${e.toItemCategory}': e
     };
 
-    // Calculate pairwise time-decay weights: w = exp(-(t_B - t_A) / sigma)
-    for (var i = 0; i < checkoffs.length; i++) {
-      for (var j = i + 1; j < checkoffs.length; j++) {
-        final a = checkoffs[i];
-        final b = checkoffs[j];
-
-        if (a.itemCategory == b.itemCategory) continue;
-
-        final deltaSec = b.checkoffTimestamp.difference(a.checkoffTimestamp).inSeconds.toDouble();
-        if (deltaSec <= 0 || deltaSec > AppConstants.walkOrderMaxDeltaSeconds) {
-          continue;
-        }
+    // Pairwise time-decay weights: w = exp(-(t_B - t_A) / sigma)
+    for (var i = 0; i < sequence.length; i++) {
+      for (var j = i + 1; j < sequence.length; j++) {
+        final a = sequence[i];
+        final b = sequence[j];
+        final deltaSec = b.value.difference(a.value).inMilliseconds / 1000.0;
+        if (deltaSec <= 0 || deltaSec > AppConstants.walkOrderMaxDeltaSeconds) continue;
 
         final weight = exp(-deltaSec / AppConstants.walkOrderDecaySigma);
-        final key = '${a.itemCategory}->${b.itemCategory}';
-
-        if (edgeMap.containsKey(key)) {
-          final curr = edgeMap[key]!;
-          final updatedWeight = (curr.forwardWeight * curr.sampleSize + weight) / (curr.sampleSize + 1);
-          edgeMap[key] = curr.copyWith(
-            forwardWeight: updatedWeight,
-            sampleSize: curr.sampleSize + 1,
-          );
-        } else {
-          edgeMap[key] = StoreLayoutEdge(
-            storeId: storeId,
-            fromItemCategory: a.itemCategory,
-            toItemCategory: b.itemCategory,
-            forwardWeight: weight,
-            sampleSize: 1,
-          );
-        }
+        final key = '${a.key}->${b.key}';
+        final curr = edgeMap[key];
+        edgeMap[key] = curr == null
+            ? StoreLayoutEdge(
+                storeId: storeId,
+                fromItemCategory: a.key,
+                toItemCategory: b.key,
+                forwardWeight: weight,
+                sampleSize: 1,
+              )
+            : curr.copyWith(
+                forwardWeight: (curr.forwardWeight * curr.sampleSize + weight) / (curr.sampleSize + 1),
+                sampleSize: curr.sampleSize + 1,
+              );
       }
     }
 
-    // Break cycles using Feedback Arc Set (FAS) to ensure DAG property
-    final dagEdges = breakCyclesWithFeedbackArcSet(edgeMap.values.toList());
-
-    // Save pruned DAG edges to database
-    for (final edge in dagEdges) {
+    for (final edge in edgeMap.values) {
       await database.insertLayoutEdge(edge);
     }
   }
 
-  /// Eliminate directed cycles by greedily removing lowest-weight back-edges
+  /// Net, acyclic precedence graph for a store: for each pair only the
+  /// direction with more evidence survives (weighted by the difference), weak
+  /// edges are dropped, then remaining longer cycles are broken.
+  List<StoreLayoutEdge> deriveDag(List<StoreLayoutEdge> evidenceEdges) {
+    final byKey = {
+      for (final e in evidenceEdges) '${e.fromItemCategory}->${e.toItemCategory}': e,
+    };
+    final net = <StoreLayoutEdge>[];
+    for (final e in evidenceEdges) {
+      final reverse = byKey['${e.toItemCategory}->${e.fromItemCategory}'];
+      final margin = e.evidence - (reverse?.evidence ?? 0.0);
+      if (margin <= AppConstants.walkOrderConfidenceThreshold) continue;
+      net.add(StoreLayoutEdge(
+        storeId: e.storeId,
+        fromItemCategory: e.fromItemCategory,
+        toItemCategory: e.toItemCategory,
+        forwardWeight: margin,
+        sampleSize: 1,
+      ));
+    }
+    return breakCyclesWithFeedbackArcSet(net);
+  }
+
+  /// Eliminate directed cycles by greedily removing the edge with the least
+  /// accumulated evidence on each cycle found.
   List<StoreLayoutEdge> breakCyclesWithFeedbackArcSet(List<StoreLayoutEdge> edges) {
     final retained = List<StoreLayoutEdge>.from(edges);
 
@@ -93,7 +125,6 @@ class LayoutLearningEngine {
       final cycle = _findCycle(retained);
       if (cycle == null || cycle.isEmpty) break;
 
-      // Find the edge in the cycle with the minimal forward weight
       StoreLayoutEdge? weakest;
       for (var i = 0; i < cycle.length - 1; i++) {
         final u = cycle[i];
@@ -101,16 +132,13 @@ class LayoutLearningEngine {
         final match = retained.firstWhere(
           (e) => e.fromItemCategory == u && e.toItemCategory == v,
         );
-        if (weakest == null || match.forwardWeight < weakest.forwardWeight) {
+        if (weakest == null || match.evidence < weakest.evidence) {
           weakest = match;
         }
       }
 
-      if (weakest != null) {
-        retained.remove(weakest);
-      } else {
-        break;
-      }
+      if (weakest == null) break;
+      retained.remove(weakest);
     }
 
     return retained;
@@ -147,7 +175,6 @@ class LayoutLearningEngine {
 
     for (final neighbor in adj[current] ?? <String>[]) {
       if ((visited[neighbor] ?? 0) == 1) {
-        // Cycle detected
         final startIndex = path.indexOf(neighbor);
         return [...path.sublist(startIndex), neighbor];
       } else if ((visited[neighbor] ?? 0) == 0) {
@@ -161,29 +188,39 @@ class LayoutLearningEngine {
     return null;
   }
 
-  /// Derive the optimal topological walk sequence for a store using Kahn's Algorithm
+  /// Learned DAG for display.
+  Future<List<StoreLayoutEdge>> getLearnedDag(String storeId) async {
+    return deriveDag(await database.getLayoutEdges(storeId));
+  }
+
+  /// Derive the optimal topological walk sequence for a store using Kahn's
+  /// Algorithm. [categoriesToPick] should be in the user's list order: it is
+  /// the tie-breaker wherever the store hasn't been learned yet.
   Future<List<String>> getOptimalWalkOrder({
     required String storeId,
     required List<String> categoriesToPick,
   }) async {
     if (categoriesToPick.length <= 1) return categoriesToPick;
 
-    final edges = await database.getLayoutEdges(storeId);
-    final relevantEdges = edges.where((e) {
-      return categoriesToPick.contains(e.fromItemCategory) &&
-          categoriesToPick.contains(e.toItemCategory);
-    }).toList();
+    final wanted = categoriesToPick.toSet();
+    final edges = (await database.getLayoutEdges(storeId))
+        .where((e) => wanted.contains(e.fromItemCategory) && wanted.contains(e.toItemCategory))
+        .toList();
 
-    return kahnsTopologicalSort(categoriesToPick, relevantEdges);
+    return kahnsTopologicalSort(categoriesToPick, deriveDag(edges));
   }
 
-  /// Kahn's Algorithm for deterministic layout sequencing
+  /// Kahn's Algorithm; among ready nodes the earliest in [nodes] goes first.
   List<String> kahnsTopologicalSort(
     List<String> nodes,
     List<StoreLayoutEdge> edges,
   ) {
-    final inDegree = <String, int>{for (final n in nodes) n: 0};
-    final adj = <String, List<String>>{for (final n in nodes) n: []};
+    final priority = <String, int>{};
+    for (var i = 0; i < nodes.length; i++) {
+      priority.putIfAbsent(nodes[i], () => i);
+    }
+    final inDegree = <String, int>{for (final n in priority.keys) n: 0};
+    final adj = <String, List<String>>{for (final n in priority.keys) n: []};
 
     for (final e in edges) {
       if (inDegree.containsKey(e.toItemCategory) && inDegree.containsKey(e.fromItemCategory)) {
@@ -192,30 +229,27 @@ class LayoutLearningEngine {
       }
     }
 
-    // Queue nodes with in-degree 0
-    final queue = nodes.where((n) => inDegree[n] == 0).toList();
-    queue.sort(); // Lexicographical / deterministic tie-breaker
-
+    int byPriority(String a, String b) => priority[a]!.compareTo(priority[b]!);
+    final ready = priority.keys.where((n) => inDegree[n] == 0).toList()..sort(byPriority);
     final sorted = <String>[];
 
-    while (queue.isNotEmpty) {
-      final u = queue.removeAt(0);
+    while (ready.isNotEmpty) {
+      final u = ready.removeAt(0);
       sorted.add(u);
 
-      for (final v in adj[u] ?? <String>[]) {
+      for (final v in adj[u]!) {
         inDegree[v] = inDegree[v]! - 1;
         if (inDegree[v] == 0) {
-          queue.add(v);
-          queue.sort();
+          ready
+            ..add(v)
+            ..sort(byPriority);
         }
       }
     }
 
-    // Append any disconnected or remaining nodes
-    for (final n in nodes) {
-      if (!sorted.contains(n)) {
-        sorted.add(n);
-      }
+    // Only reachable if the caller passed a cyclic graph; keep list order.
+    for (final n in priority.keys) {
+      if (!sorted.contains(n)) sorted.add(n);
     }
 
     return sorted;

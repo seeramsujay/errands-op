@@ -1,6 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Home Assistant WebSocket sync and the optional OSRM routing server. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Live GPS for store arrival/exit detection and route origin. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Home Assistant on a home network is usually plain http/ws. -->
     <application
-        android:label="op_list"
+        android:label="op-list"
+        android:usesCleartextTraffic="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

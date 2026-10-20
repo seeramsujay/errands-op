@@ -22,6 +22,14 @@ class ActiveRoute {
 
   bool get hasWarnings => warnings.isNotEmpty || solverStatus == 'RELAXED_CONSTRAINTS';
 
+  /// Stop that serves [itemId], if any.
+  RouteStop? stopForItem(String itemId) {
+    for (final stop in stops) {
+      if (stop.itemsToPick.any((i) => i.id == itemId)) return stop;
+    }
+    return null;
+  }
+
   ActiveRoute copyWith({
     String? id,
     DateTime? generatedAt,
@@ -49,6 +57,7 @@ class ActiveRoute {
       'total_distance_meters': totalDistanceMeters,
       'total_duration_seconds': totalDurationSeconds,
       'solver_status': solverStatus,
+      'warnings': warnings.join('\n'),
     };
   }
 
@@ -60,6 +69,10 @@ class ActiveRoute {
       totalDurationSeconds: (map['total_duration_seconds'] as num).toDouble(),
       solverStatus: map['solver_status'] as String,
       stops: stops,
+      warnings: ((map['warnings'] as String?) ?? '')
+          .split('\n')
+          .where((w) => w.isNotEmpty)
+          .toList(),
     );
   }
 }

@@ -5,6 +5,7 @@ import '../../data/sync/ha_websocket_client.dart';
 import '../../services/geofence_engine.dart';
 import '../../state/app_state.dart';
 import '../widgets/geofence_badge.dart';
+import '../widgets/item_editor_sheet.dart';
 import '../widgets/item_tile.dart';
 import 'in_store_screen.dart';
 import 'route_plan_screen.dart';
@@ -71,7 +72,9 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
       body: Column(
         children: [
           // Inside Store Shopping Mode shortcut banner
-          if (state.geofenceState == GeofenceState.insideStore && state.activeStore != null)
+          if ((state.geofenceState == GeofenceState.insideStore ||
+                  state.geofenceState == GeofenceState.pendingExit) &&
+              state.activeStore != null)
             GestureDetector(
               onTap: () {
                 Navigator.of(context).push(
@@ -88,7 +91,7 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF10B981).withOpacity(0.3),
+                      color: const Color(0xFF10B981).withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -124,7 +127,8 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
             ),
 
           // Filter chips
-          Padding(
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Row(
               children: [
@@ -157,7 +161,7 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.check_circle_outline, size: 56, color: Colors.white.withOpacity(0.2)),
+                        Icon(Icons.check_circle_outline, size: 56, color: Colors.white.withValues(alpha: 0.2)),
                         const SizedBox(height: 12),
                         const Text(
                           'No items in this filter',
@@ -168,8 +172,9 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
                   )
                 : ReorderableListView.builder(
                     itemCount: displayedItems.length,
-                    onReorder: (oldIndex, newIndex) {
-                      state.reorderItem(oldIndex, newIndex);
+                    buildDefaultDragHandles: false,
+                    onReorderItem: (oldIndex, newIndex) {
+                      state.reorderVisible(displayedItems, oldIndex, newIndex);
                     },
                     itemBuilder: (context, index) {
                       final item = displayedItems[index];
@@ -180,6 +185,7 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
                         onToggleComplete: () => state.toggleItemCompleted(item.id),
                         onTogglePin: () => state.togglePin(item.id),
                         onDelete: () => state.deleteItem(item.id),
+                        onEdit: () => _editItem(context, state, item),
                       );
                     },
                   ),
@@ -219,9 +225,10 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
                       onPressed: state.isSolving
                           ? null
                           : () async {
+                              final navigator = Navigator.of(context);
                               final route = await state.solveErrandRoute();
                               if (!mounted) return;
-                              Navigator.of(context).push(
+                              navigator.push(
                                 MaterialPageRoute(
                                   builder: (_) => RoutePlanScreen(route: route),
                                 ),
@@ -265,7 +272,7 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
-      selectedColor: const Color(0xFF6366F1).withOpacity(0.3),
+      selectedColor: const Color(0xFF6366F1).withValues(alpha: 0.3),
       backgroundColor: const Color(0xFF1E293B),
       side: BorderSide(
         color: isSelected ? const Color(0xFF6366F1) : const Color(0xFF334155),
@@ -281,20 +288,23 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
     if (state == HaConnectionState.connected) {
       dotColor = const Color(0xFF10B981);
       text = 'HA Live';
-    } else if (state == HaConnectionState.mockConnected) {
-      dotColor = const Color(0xFF06B6D4);
-      text = 'HA Mock';
+    } else if (state == HaConnectionState.notConfigured) {
+      dotColor = const Color(0xFF94A3B8);
+      text = 'Local only';
     } else if (state == HaConnectionState.connecting || state == HaConnectionState.authenticating) {
       dotColor = const Color(0xFFF59E0B);
       text = 'Syncing';
+    } else if (state == HaConnectionState.error) {
+      dotColor = const Color(0xFFF87171);
+      text = 'HA Error';
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: dotColor.withOpacity(0.12),
+        color: dotColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: dotColor.withOpacity(0.4)),
+        border: Border.all(color: dotColor.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -318,136 +328,26 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
     );
   }
 
-  void _showAddItemDialog(BuildContext context, AppState state) {
-    final titleController = TextEditingController();
-    final descController = TextEditingController();
-    var selectedCat = 'groceries';
-    var isPerishable = false;
+  Future<void> _showAddItemDialog(BuildContext context, AppState state) async {
+    final draft = await showItemEditorSheet(context);
+    if (draft == null) return;
+    await state.addItem(
+      summary: draft.summary,
+      description: draft.description,
+      category: draft.category,
+      isPerishable: draft.isPerishable,
+    );
+  }
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF0F172A),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Add Errand / Item',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: titleController,
-                    autofocus: true,
-                    decoration: const InputDecoration(
-                      hintText: 'What do you need?',
-                      hintStyle: TextStyle(color: Colors.white38),
-                      filled: true,
-                      fillColor: Color(0xFF1E293B),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: descController,
-                    decoration: const InputDecoration(
-                      hintText: 'Notes / specifications (optional)',
-                      hintStyle: TextStyle(color: Colors.white38),
-                      filled: true,
-                      fillColor: Color(0xFF1E293B),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Category dropdown
-                  Row(
-                    children: [
-                      const Text('Category:', style: TextStyle(color: Colors.white70)),
-                      const SizedBox(width: 10),
-                      DropdownButton<String>(
-                        value: selectedCat,
-                        dropdownColor: const Color(0xFF1E293B),
-                        items: const [
-                          DropdownMenuItem(value: 'groceries', child: Text('Groceries')),
-                          DropdownMenuItem(value: 'dairy', child: Text('Dairy')),
-                          DropdownMenuItem(value: 'frozen', child: Text('Frozen Foods')),
-                          DropdownMenuItem(value: 'produce', child: Text('Fresh Produce')),
-                          DropdownMenuItem(value: 'pharmacy', child: Text('Pharmacy')),
-                          DropdownMenuItem(value: 'hardware', child: Text('Hardware')),
-                          DropdownMenuItem(value: 'admin_errand', child: Text('Admin / Document')),
-                          DropdownMenuItem(value: 'generic', child: Text('Generic')),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            setModalState(() {
-                              selectedCat = val;
-                              if (val == 'frozen' || val == 'dairy') {
-                                isPerishable = true;
-                              }
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-
-                  // Perishable toggle
-                  SwitchListTile(
-                    title: const Text('Perishable / Thermal Sensitive (Keep Cold)'),
-                    subtitle: const Text(
-                      'Pushes stop to the final leg of trip',
-                      style: TextStyle(fontSize: 11, color: Colors.white54),
-                    ),
-                    value: isPerishable,
-                    activeColor: const Color(0xFF06B6D4),
-                    onChanged: (val) => setModalState(() => isPerishable = val),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6366F1),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: () {
-                        if (titleController.text.trim().isNotEmpty) {
-                          state.addItem(
-                            summary: titleController.text.trim(),
-                            description: descController.text.trim().isEmpty ? null : descController.text.trim(),
-                            category: selectedCat,
-                            isPerishable: isPerishable,
-                          );
-                          Navigator.pop(ctx);
-                        }
-                      },
-                      child: const Text('Add to Errand List', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+  Future<void> _editItem(BuildContext context, AppState state, TodoItem item) async {
+    final draft = await showItemEditorSheet(context, existing: item);
+    if (draft == null) return;
+    await state.editItem(
+      item.id,
+      summary: draft.summary,
+      description: draft.description,
+      category: draft.category,
+      isPerishable: draft.isPerishable,
     );
   }
 }

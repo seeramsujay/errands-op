@@ -64,7 +64,7 @@ class _AppNavigationShellState extends State<AppNavigationShell> {
           setState(() => _currentIndex = index);
         },
         backgroundColor: const Color(0xFF0F172A),
-        indicatorColor: const Color(0xFF6366F1).withOpacity(0.3),
+        indicatorColor: const Color(0xFF6366F1).withValues(alpha: 0.3),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.checklist_outlined),

@@ -24,11 +24,41 @@ class Store {
     this.supportedCategories = const ['generic'],
   });
 
+  bool get isAlwaysOpen =>
+      openingTimeSec == null || closingTimeSec == null || openingTimeSec == closingTimeSec;
+
+  /// The opening period that contains [time], or failing that the next one
+  /// that starts later on the same calendar day. Handles stores that close
+  /// after midnight (closing earlier in the day than opening). Returns null
+  /// when the store does not open again that day.
+  ({DateTime open, DateTime close})? windowAtOrAfter(DateTime time) {
+    if (isAlwaysOpen) {
+      return (open: time, close: time.add(const Duration(days: 365)));
+    }
+    final overnight = closingTimeSec! < openingTimeSec!;
+    ({DateTime open, DateTime close}) windowFor(int dayOffset) {
+      final day = DateTime(time.year, time.month, time.day + dayOffset);
+      final closeDay = overnight ? DateTime(day.year, day.month, day.day + 1) : day;
+      return (
+        open: day.add(Duration(seconds: openingTimeSec!)),
+        close: closeDay.add(Duration(seconds: closingTimeSec!)),
+      );
+    }
+
+    // Yesterday's window can still be running after midnight for overnight stores.
+    for (final offset in overnight ? const [-1, 0] : const [0]) {
+      final w = windowFor(offset);
+      if (!time.isBefore(w.open) && !time.isAfter(w.close)) return w;
+    }
+    final today = windowFor(0);
+    if (time.isBefore(today.open)) return today;
+    return null;
+  }
+
   /// Check if the store is open at a given DateTime
   bool isOpenAt(DateTime time) {
-    if (openingTimeSec == null || closingTimeSec == null) return true;
-    final secOfDay = time.hour * 3600 + time.minute * 60 + time.second;
-    return secOfDay >= openingTimeSec! && secOfDay <= closingTimeSec!;
+    final w = windowAtOrAfter(time);
+    return w != null && !time.isBefore(w.open);
   }
 
   /// Format opening hours as readable string (e.g. "09:00 - 21:00")

@@ -22,7 +22,7 @@ void main() {
 
     var toggledComplete = false;
     var toggledPin = false;
-    var deleted = false;
+    var edited = false;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -32,7 +32,8 @@ void main() {
             index: 0,
             onToggleComplete: () => toggledComplete = true,
             onTogglePin: () => toggledPin = true,
-            onDelete: () => deleted = true,
+            onDelete: () {},
+            onEdit: () => edited = true,
           ),
         ),
       ),
@@ -43,7 +44,7 @@ void main() {
     expect(find.text('Unsweetened'), findsOneWidget);
     expect(find.text('#1'), findsOneWidget);
     expect(find.text('Stop #2'), findsOneWidget);
-    expect(find.text('Perishable (Final Leg)'), findsOneWidget);
+    expect(find.text('Keep cold'), findsOneWidget);
     expect(find.byIcon(Icons.push_pin), findsOneWidget);
 
     // Tap checkbox
@@ -53,5 +54,9 @@ void main() {
     // Tap pin
     await tester.tap(find.byIcon(Icons.push_pin));
     expect(toggledPin, isTrue);
+
+    // Tapping the card body opens the editor
+    await tester.tap(find.text('Almond Milk'));
+    expect(edited, isTrue);
   });
 }

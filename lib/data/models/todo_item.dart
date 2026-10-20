@@ -2,6 +2,7 @@
 class TodoItem {
   final String id;
   final String haEntityId;
+  final String? haUid; // Home Assistant's uid once the item exists there
   final String summary;
   final String? description;
   final String category; // e.g. 'groceries', 'hardware', 'pharmacy', 'dairy', 'frozen'
@@ -16,6 +17,7 @@ class TodoItem {
   const TodoItem({
     required this.id,
     required this.haEntityId,
+    this.haUid,
     required this.summary,
     this.description,
     this.category = 'generic',
@@ -33,6 +35,7 @@ class TodoItem {
   TodoItem copyWith({
     String? id,
     String? haEntityId,
+    String? haUid,
     String? summary,
     String? description,
     String? category,
@@ -47,6 +50,7 @@ class TodoItem {
     return TodoItem(
       id: id ?? this.id,
       haEntityId: haEntityId ?? this.haEntityId,
+      haUid: haUid ?? this.haUid,
       summary: summary ?? this.summary,
       description: description ?? this.description,
       category: category ?? this.category,
@@ -64,6 +68,7 @@ class TodoItem {
     return {
       'id': id,
       'ha_entity_id': haEntityId,
+      'ha_uid': haUid,
       'summary': summary,
       'description': description,
       'category': category,
@@ -81,6 +86,7 @@ class TodoItem {
     return TodoItem(
       id: map['id'] as String,
       haEntityId: map['ha_entity_id'] as String,
+      haUid: map['ha_uid'] as String?,
       summary: map['summary'] as String,
       description: map['description'] as String?,
       category: (map['category'] as String?) ?? 'generic',

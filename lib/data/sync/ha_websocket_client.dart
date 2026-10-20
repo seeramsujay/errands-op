@@ -3,62 +3,137 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../core/constants.dart';
-import '../models/todo_item.dart';
 
 enum HaConnectionState {
+  notConfigured, // No URL/token yet: the app works fully offline
   disconnected,
   connecting,
   authenticating,
   connected,
-  mockConnected,
   error,
 }
 
+/// A to-do item as Home Assistant reports it (todo/item/subscribe).
+class HaTodoItem {
+  final String uid;
+  final String summary;
+  final String status; // 'needs_action' | 'completed'
+  final String? description;
+
+  const HaTodoItem({
+    required this.uid,
+    required this.summary,
+    this.status = 'needs_action',
+    this.description,
+  });
+
+  factory HaTodoItem.fromJson(Map<String, dynamic> json) {
+    return HaTodoItem(
+      uid: json['uid'] as String,
+      summary: (json['summary'] as String?) ?? '',
+      status: (json['status'] as String?) ?? 'needs_action',
+      description: json['description'] as String?,
+    );
+  }
+}
+
+/// Result of a call over the socket.
+class HaResult {
+  final bool success;
+  final String? error;
+  final Object? result;
+  const HaResult({required this.success, this.error, this.result});
+}
+
+typedef WebSocketConnector = WebSocketChannel Function(Uri uri);
+
 /// Home Assistant WebSocket API client over /api/websocket
 class HomeAssistantWsClient {
-  final String host;
-  final int port;
-  final String accessToken;
-  final String entityId;
-  final bool useSsl;
-  final bool mockMode;
+  String _baseUrl;
+  String _accessToken;
+  String _entityId;
+  final WebSocketConnector _connector;
 
   WebSocketChannel? _channel;
   StreamSubscription? _subscription;
   Timer? _reconnectTimer;
+  Timer? _pingTimer;
   int _reconnectAttempts = 0;
   int _messageId = 1;
-  final Map<int, Completer<Map<String, dynamic>>> _pendingRequests = {};
+  int? _subscriptionId;
+  bool _wantConnected = false;
+  final Map<int, Completer<HaResult>> _pendingRequests = {};
 
-  HaConnectionState _state = HaConnectionState.disconnected;
+  HaConnectionState _state = HaConnectionState.notConfigured;
+  String? _lastError;
   final _stateController = StreamController<HaConnectionState>.broadcast();
-  final _eventController = StreamController<Map<String, dynamic>>.broadcast();
+  final _itemsController = StreamController<List<HaTodoItem>>.broadcast();
 
   HomeAssistantWsClient({
-    this.host = '127.0.0.1',
-    this.port = AppConstants.defaultWsPort,
-    this.accessToken = '',
-    this.entityId = AppConstants.defaultHaEntityId,
-    this.useSsl = false,
-    this.mockMode = true, // Defaults to mock mode for out-of-the-box zero-setup testability
-  });
+    this._baseUrl = '',
+    this._accessToken = '',
+    this._entityId = AppConstants.defaultHaEntityId,
+    WebSocketConnector? connector,
+  }) : _connector = connector ?? WebSocketChannel.connect {
+    _state = isConfigured ? HaConnectionState.disconnected : HaConnectionState.notConfigured;
+  }
 
+  String get baseUrl => _baseUrl;
+  String get entityId => _entityId;
+  bool get hasToken => _accessToken.isNotEmpty;
+  bool get isConfigured => _baseUrl.trim().isNotEmpty && _accessToken.isNotEmpty;
+  bool get isConnected => _state == HaConnectionState.connected;
   HaConnectionState get state => _state;
+  String? get lastError => _lastError;
   Stream<HaConnectionState> get stateStream => _stateController.stream;
-  Stream<Map<String, dynamic>> get eventStream => _eventController.stream;
+
+  /// Full item list of the entity, emitted on subscribe and on every change.
+  Stream<List<HaTodoItem>> get itemsStream => _itemsController.stream;
+
+  /// Derive ws(s)://host[:port]/api/websocket from what users usually paste:
+  /// "homeassistant.local:8123", "http://192.168.1.5:8123", "https://x.ui.nabu.casa".
+  static Uri websocketUri(String baseUrl) {
+    var raw = baseUrl.trim();
+    final hadScheme = raw.contains('://');
+    if (!hadScheme) raw = 'http://$raw';
+    final parsed = Uri.parse(raw);
+    final secure = parsed.scheme == 'https' || parsed.scheme == 'wss';
+    return Uri(
+      scheme: secure ? 'wss' : 'ws',
+      host: parsed.host,
+      port: parsed.hasPort ? parsed.port : (hadScheme ? null : AppConstants.defaultWsPort),
+      path: '/api/websocket',
+    );
+  }
 
   void _setState(HaConnectionState newState) {
     _state = newState;
-    _stateController.add(newState);
+    if (!_stateController.isClosed) _stateController.add(newState);
+  }
+
+  /// Change connection settings; reconnects if a connection was wanted.
+  Future<void> configure({
+    required String baseUrl,
+    required String accessToken,
+    required String entityId,
+  }) async {
+    final wasWanted = _wantConnected;
+    disconnect();
+    _baseUrl = baseUrl.trim();
+    _accessToken = accessToken.trim();
+    _entityId = entityId.trim().isEmpty ? AppConstants.defaultHaEntityId : entityId.trim();
+    _lastError = null;
+    _setState(isConfigured ? HaConnectionState.disconnected : HaConnectionState.notConfigured);
+    if (wasWanted && isConfigured) await connect();
   }
 
   /// Connect to Home Assistant WebSocket
   Future<void> connect() async {
-    if (mockMode) {
-      _setState(HaConnectionState.mockConnected);
+    if (!isConfigured) {
+      _setState(HaConnectionState.notConfigured);
       return;
     }
-
+    _wantConnected = true;
     if (_state == HaConnectionState.connecting ||
         _state == HaConnectionState.connected ||
         _state == HaConnectionState.authenticating) {
@@ -66,15 +141,14 @@ class HomeAssistantWsClient {
     }
 
     _setState(HaConnectionState.connecting);
-    final scheme = useSsl ? 'wss' : 'ws';
-    final uri = Uri.parse('$scheme://$host:$port/api/websocket');
-
     try {
-      _channel = WebSocketChannel.connect(uri);
-      _subscription = _channel!.stream.listen(
+      final channel = _connector(websocketUri(_baseUrl));
+      _channel = channel;
+      _subscription = channel.stream.listen(
         _onMessageReceived,
         onError: _onError,
         onDone: _onDisconnected,
+        cancelOnError: true,
       );
     } catch (e) {
       _onError(e);
@@ -82,154 +156,182 @@ class HomeAssistantWsClient {
   }
 
   void _onMessageReceived(dynamic message) {
+    final Map<String, dynamic> data;
     try {
-      final data = jsonDecode(message as String) as Map<String, dynamic>;
-      final type = data['type'] as String?;
+      data = jsonDecode(message as String) as Map<String, dynamic>;
+    } catch (_) {
+      return; // Not JSON; ignore.
+    }
+    final type = data['type'] as String?;
 
-      if (type == 'auth_required') {
+    switch (type) {
+      case 'auth_required':
         _setState(HaConnectionState.authenticating);
-        _sendRaw({'type': 'auth', 'access_token': accessToken});
+        _sendRaw({'type': 'auth', 'access_token': _accessToken});
         return;
-      }
-
-      if (type == 'auth_ok') {
+      case 'auth_ok':
         _reconnectAttempts = 0;
+        _lastError = null;
         _setState(HaConnectionState.connected);
         _subscribeToTodo();
+        _startPing();
         return;
-      }
-
-      if (type == 'auth_invalid') {
+      case 'auth_invalid':
+        _lastError = (data['message'] as String?) ?? 'Invalid access token';
+        _wantConnected = false; // Retrying with the same token won't help.
+        _teardown();
         _setState(HaConnectionState.error);
-        disconnect();
         return;
-      }
-
-      // Check request responses
-      final id = data['id'] as int?;
-      if (id != null && _pendingRequests.containsKey(id)) {
-        _pendingRequests.remove(id)!.complete(data);
-      }
-
-      // Handle subscription events
-      if (type == 'event') {
-        _eventController.add(data['event'] as Map<String, dynamic>);
-      }
-    } catch (e) {
-      // JSON decode or parse failure
+      case 'event':
+        if (data['id'] == _subscriptionId) {
+          final event = data['event'] as Map<String, dynamic>?;
+          final items = event?['items'] as List?;
+          if (items != null && !_itemsController.isClosed) {
+            _itemsController.add(
+              items.map((i) => HaTodoItem.fromJson(Map<String, dynamic>.from(i as Map))).toList(),
+            );
+          }
+        }
+        return;
+      case 'result':
+      case 'pong':
+        final id = data['id'] as int?;
+        final completer = id == null ? null : _pendingRequests.remove(id);
+        if (completer == null) return;
+        if (type == 'pong' || data['success'] == true) {
+          completer.complete(HaResult(success: true, result: data['result']));
+        } else {
+          final error = data['error'] as Map?;
+          completer.complete(HaResult(
+            success: false,
+            error: (error?['message'] ?? error?['code'] ?? 'request failed').toString(),
+          ));
+        }
+        return;
     }
   }
 
-  void _subscribeToTodo() {
-    sendMessage({
-      'type': 'todo/item/subscribe',
-      'entity_id': entityId,
+  Future<void> _subscribeToTodo() async {
+    // Events for this subscription carry the id of the subscribe request.
+    _subscriptionId = _messageId;
+    final res = await sendMessage({'type': 'todo/item/subscribe', 'entity_id': _entityId});
+    if (!res.success && _state == HaConnectionState.connected) {
+      _lastError = 'Could not subscribe to $_entityId: ${res.error}';
+      _setState(HaConnectionState.error);
+    }
+  }
+
+  void _startPing() {
+    _pingTimer?.cancel();
+    _pingTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      final res = await sendMessage({'type': 'ping'}, timeout: const Duration(seconds: 10));
+      if (!res.success && _state == HaConnectionState.connected) {
+        _onError('ping timeout');
+      }
     });
   }
 
-  /// Send message and optionally await response
-  Future<Map<String, dynamic>> sendMessage(Map<String, dynamic> payload) {
-    if (mockMode) {
-      return Future.value({'success': true, 'id': _messageId++});
+  /// Send message and await its result
+  Future<HaResult> sendMessage(
+    Map<String, dynamic> payload, {
+    Duration timeout = const Duration(seconds: 10),
+  }) {
+    if (_channel == null) {
+      return Future.value(const HaResult(success: false, error: 'not connected'));
     }
 
     final id = _messageId++;
-    final completer = Completer<Map<String, dynamic>>();
+    final completer = Completer<HaResult>();
     _pendingRequests[id] = completer;
-
-    final fullPayload = Map<String, dynamic>.from(payload)..['id'] = id;
-    _sendRaw(fullPayload);
+    _sendRaw({...payload, 'id': id});
 
     return completer.future.timeout(
-      const Duration(seconds: 10),
+      timeout,
       onTimeout: () {
         _pendingRequests.remove(id);
-        return {'success': false, 'error': 'timeout'};
+        return const HaResult(success: false, error: 'timeout');
       },
     );
   }
 
   void _sendRaw(Map<String, dynamic> data) {
-    if (_channel != null) {
-      _channel!.sink.add(jsonEncode(data));
+    try {
+      _channel?.sink.add(jsonEncode(data));
+    } catch (_) {
+      // Sink closed underneath us; onDone/onError will handle reconnecting.
     }
   }
 
-  /// Sync local mutation to Home Assistant
-  Future<bool> sendTodoUpdate({
-    required String itemId,
-    required String summary,
-    required String status,
-    String? description,
-  }) async {
-    if (mockMode) return true;
-
-    final res = await sendMessage({
+  Future<HaResult> _callTodoService(String service, Map<String, dynamic> serviceData) {
+    return sendMessage({
       'type': 'call_service',
       'domain': 'todo',
-      'service': 'update_item',
-      'service_data': {
-        'entity_id': entityId,
-        'item': itemId,
-        'rename': summary,
-        'status': status,
-        if (description != null) 'description': description,
-      },
+      'service': service,
+      'service_data': serviceData,
+      'target': {'entity_id': _entityId},
     });
-
-    return res['success'] == true;
   }
 
-  Future<bool> sendTodoAdd({
-    required String summary,
+  /// Update an existing item. Only the given fields are sent: some to-do
+  /// integrations (e.g. the built-in shopping list) reject a description.
+  Future<HaResult> updateItem({
+    required String uid,
+    String? rename,
+    String? status,
     String? description,
-  }) async {
-    if (mockMode) return true;
-
-    final res = await sendMessage({
-      'type': 'call_service',
-      'domain': 'todo',
-      'service': 'add_item',
-      'service_data': {
-        'entity_id': entityId,
-        'item': summary,
-        if (description != null) 'description': description,
-      },
+  }) {
+    return _callTodoService('update_item', {
+      'item': uid,
+      'rename': ?rename,
+      'status': ?status,
+      'description': ?description,
     });
-
-    return res['success'] == true;
   }
 
-  Future<bool> sendTodoRemove({required String itemId}) async {
-    if (mockMode) return true;
+  /// HA assigns the uid; it arrives with the next subscription snapshot.
+  Future<HaResult> addItem({required String summary}) {
+    return _callTodoService('add_item', {'item': summary});
+  }
 
-    final res = await sendMessage({
-      'type': 'call_service',
-      'domain': 'todo',
-      'service': 'remove_item',
-      'service_data': {
-        'entity_id': entityId,
-        'item': [itemId],
-      },
+  Future<HaResult> removeItem({required String uid}) {
+    return _callTodoService('remove_item', {
+      'item': [uid],
     });
-
-    return res['success'] == true;
   }
 
   void _onError(dynamic error) {
+    _lastError = error.toString();
+    _teardown();
     _setState(HaConnectionState.error);
     _scheduleReconnect();
   }
 
   void _onDisconnected() {
+    _teardown();
     _setState(HaConnectionState.disconnected);
     _scheduleReconnect();
+  }
+
+  void _teardown() {
+    _pingTimer?.cancel();
+    _pingTimer = null;
+    _subscription?.cancel();
+    _subscription = null;
+    try {
+      _channel?.sink.close();
+    } catch (_) {}
+    _channel = null;
+    _subscriptionId = null;
+    for (final c in _pendingRequests.values) {
+      if (!c.isCompleted) c.complete(const HaResult(success: false, error: 'disconnected'));
+    }
+    _pendingRequests.clear();
   }
 
   /// Exponential backoff with jitter:
   /// T_retry = min(T_max, T_base * 2^attempt + rand(0, 1000ms))
   void _scheduleReconnect() {
-    if (mockMode) return;
+    if (!_wantConnected) return;
     _reconnectTimer?.cancel();
 
     _reconnectAttempts++;
@@ -243,37 +345,17 @@ class HomeAssistantWsClient {
     });
   }
 
-  /// Simulate incoming Home Assistant item event (for testing & mock mode)
-  void simulateIncomingRemoteItem({
-    required String summary,
-    String category = 'groceries',
-    bool isPerishable = false,
-  }) {
-    final event = {
-      'type': 'todo_update',
-      'action': 'add',
-      'item': {
-        'id': 'remote_${DateTime.now().millisecondsSinceEpoch}',
-        'summary': summary,
-        'category': category,
-        'is_perishable': isPerishable,
-        'status': 'needs_action',
-      },
-    };
-    _eventController.add(event);
-  }
-
+  /// Close the connection and stop reconnecting.
   void disconnect() {
+    _wantConnected = false;
     _reconnectTimer?.cancel();
-    _subscription?.cancel();
-    _channel?.sink.close();
-    _channel = null;
-    _setState(HaConnectionState.disconnected);
+    _teardown();
+    _setState(isConfigured ? HaConnectionState.disconnected : HaConnectionState.notConfigured);
   }
 
   void dispose() {
     disconnect();
     _stateController.close();
-    _eventController.close();
+    _itemsController.close();
   }
 }

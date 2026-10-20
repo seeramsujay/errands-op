@@ -70,6 +70,7 @@ class VisitCheckoff {
       'id': id,
       'visit_id': visitId,
       'item_id': itemId,
+      'item_category': itemCategory,
       'checkoff_timestamp': checkoffTimestamp.toIso8601String(),
     };
   }

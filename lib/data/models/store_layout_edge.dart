@@ -14,6 +14,11 @@ class StoreLayoutEdge {
     this.sampleSize = 0,
   });
 
+  /// Accumulated precedence evidence: sum of the decay weights of every
+  /// observation (forward_weight is their mean). Hand-built edges without a
+  /// sample count are treated as a single observation.
+  double get evidence => forwardWeight * (sampleSize > 0 ? sampleSize : 1);
+
   StoreLayoutEdge copyWith({
     String? storeId,
     String? fromItemCategory,

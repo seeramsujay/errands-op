@@ -27,12 +27,14 @@ class MapViewScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             color: const Color(0xFF0F172A),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            child: Wrap(
+              alignment: WrapAlignment.spaceAround,
+              spacing: 12,
+              runSpacing: 4,
               children: [
                 _buildLegendItem('User GPS', const Color(0xFF6366F1)),
-                _buildLegendItem('Arrival 40m', const Color(0xFF10B981)),
-                _buildLegendItem('Exit 80m', const Color(0xFFF59E0B)),
+                _buildLegendItem('Arrival ring', const Color(0xFF10B981)),
+                _buildLegendItem('Exit ring', const Color(0xFFF59E0B)),
                 _buildLegendItem('Route Polyline', const Color(0xFF818CF8)),
               ],
             ),
@@ -61,26 +63,35 @@ class MapViewScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Column(
+                Expanded(
+                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Current Fix:', style: TextStyle(fontSize: 11, color: Colors.white38)),
+                    Text(
+                      state.hasLiveFix ? 'Current Fix:' : 'Home (no GPS fix yet):',
+                      style: const TextStyle(fontSize: 11, color: Colors.white38),
+                    ),
                     Text(
                       '${state.userLat.toStringAsFixed(4)}, ${state.userLon.toStringAsFixed(4)}',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ],
+                 ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E293B),
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () async {
-                    // Simulate moving to next candidate store
-                    if (state.stores.isNotEmpty) {
-                      final target = state.stores.first;
+                    // Simulate moving to the next unfinished stop of the plan.
+                    final nextStop = state.activeRoute?.stops
+                        .where((s) => s.store != null && s.store!.id != state.activeStore?.id)
+                        .where((s) => s.itemsToPick.any((i) => !i.isCompleted))
+                        .firstOrNull;
+                    final target = nextStop?.store ?? state.stores.firstOrNull;
+                    if (target != null) {
                       await state.simulateDriveToStore(target);
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -90,7 +101,7 @@ class MapViewScreen extends StatelessWidget {
                     }
                   },
                   icon: const Icon(Icons.near_me, size: 16),
-                  label: const Text('Move to Store'),
+                  label: const Text('Move to Next Stop'),
                 ),
               ],
             ),

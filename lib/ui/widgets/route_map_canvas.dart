@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../services/geofence_engine.dart';
 import '../../data/models/active_route.dart';
 import '../../data/models/store.dart';
 
@@ -94,7 +95,7 @@ class _MapPainter extends CustomPainter {
 
     // 1. Draw subtle background coordinate grid
     final gridPaint = Paint()
-      ..color = const Color(0xFF1C2A4A).withOpacity(0.5)
+      ..color = const Color(0xFF1C2A4A).withValues(alpha: 0.5)
       ..strokeWidth = 1;
 
     for (var x = 0.0; x < size.width; x += 40) {
@@ -107,7 +108,7 @@ class _MapPainter extends CustomPainter {
     // 2. Draw planned route polyline connecting origin and stops
     if (activeRoute != null && activeRoute!.stops.isNotEmpty) {
       final routePaint = Paint()
-        ..color = const Color(0xFF6366F1).withOpacity(0.8)
+        ..color = const Color(0xFF6366F1).withValues(alpha: 0.8)
         ..strokeWidth = 3.5
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;
@@ -125,32 +126,36 @@ class _MapPainter extends CustomPainter {
       canvas.drawPath(path, routePaint);
     }
 
-    // 3. Draw Store Geofence Dual-Rings and Pins
+    // 3. Draw Store Geofence Dual-Rings and Pins, to scale (~111 km per
+    // degree of latitude) but never smaller than a legible minimum.
+    final pxPerMeter = size.height / ((maxLat - minLat) * 111000.0);
     for (final store in stores) {
       final pos = toCanvas(store.latitude, store.longitude);
       final isCurrentStore = activeStore?.id == store.id;
+      final innerPx = max(GeofenceEngine.innerRadius(store) * pxPerMeter, 10.0);
+      final outerPx = max(GeofenceEngine.outerRadius(store) * pxPerMeter, innerPx + 8);
 
-      // Outer Exit Boundary (80m) in amber
+      // Outer Exit Boundary in amber
       final outerRingPaint = Paint()
-        ..color = (isCurrentStore ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8)).withOpacity(0.12)
+        ..color = (isCurrentStore ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8)).withValues(alpha: 0.12)
         ..style = PaintingStyle.fill;
       final outerRingBorder = Paint()
-        ..color = (isCurrentStore ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8)).withOpacity(0.35)
+        ..color = (isCurrentStore ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8)).withValues(alpha: 0.35)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2;
-      canvas.drawCircle(pos, 28, outerRingPaint);
-      canvas.drawCircle(pos, 28, outerRingBorder);
+      canvas.drawCircle(pos, outerPx, outerRingPaint);
+      canvas.drawCircle(pos, outerPx, outerRingBorder);
 
-      // Inner Arrival Boundary (40m) in emerald
+      // Inner Arrival Boundary in emerald
       final innerRingPaint = Paint()
-        ..color = (isCurrentStore ? const Color(0xFF10B981) : const Color(0xFF6EE7B7)).withOpacity(0.2)
+        ..color = (isCurrentStore ? const Color(0xFF10B981) : const Color(0xFF6EE7B7)).withValues(alpha: 0.2)
         ..style = PaintingStyle.fill;
       final innerRingBorder = Paint()
-        ..color = (isCurrentStore ? const Color(0xFF10B981) : const Color(0xFF6EE7B7)).withOpacity(0.6)
+        ..color = (isCurrentStore ? const Color(0xFF10B981) : const Color(0xFF6EE7B7)).withValues(alpha: 0.6)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5;
-      canvas.drawCircle(pos, 16, innerRingPaint);
-      canvas.drawCircle(pos, 16, innerRingBorder);
+      canvas.drawCircle(pos, innerPx, innerRingPaint);
+      canvas.drawCircle(pos, innerPx, innerRingBorder);
 
       // Store Center Dot
       final storePinPaint = Paint()
@@ -207,7 +212,7 @@ class _MapPainter extends CustomPainter {
     // 4. Draw User Position with Pulse Radar
     final userPos = toCanvas(userLat, userLon);
     final userPulsePaint = Paint()
-      ..color = const Color(0xFF6366F1).withOpacity(0.25)
+      ..color = const Color(0xFF6366F1).withValues(alpha: 0.25)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(userPos, 18, userPulsePaint);
 
