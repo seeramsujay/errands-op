@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+
 import '../../core/categories.dart';
 import '../../data/models/store.dart';
 import '../../state/app_state.dart';
@@ -33,10 +34,18 @@ class _StoreEditorScreenState extends State<StoreEditorScreen> {
     final s = widget.store;
     final state = context.read<AppState>();
     _name = TextEditingController(text: s?.name ?? '');
-    _lat = TextEditingController(text: (s?.latitude ?? state.userLat).toStringAsFixed(6));
-    _lon = TextEditingController(text: (s?.longitude ?? state.userLon).toStringAsFixed(6));
-    _radius = TextEditingController(text: (s?.geofenceRadiusMeters ?? 40).toStringAsFixed(0));
-    _serviceMin = TextEditingController(text: ((s?.avgCheckoutDelaySec ?? 600) ~/ 60).toString());
+    _lat = TextEditingController(
+      text: (s?.latitude ?? state.userLat).toStringAsFixed(6),
+    );
+    _lon = TextEditingController(
+      text: (s?.longitude ?? state.userLon).toStringAsFixed(6),
+    );
+    _radius = TextEditingController(
+      text: (s?.geofenceRadiusMeters ?? 40).toStringAsFixed(0),
+    );
+    _serviceMin = TextEditingController(
+      text: ((s?.avgCheckoutDelaySec ?? 600) ~/ 60).toString(),
+    );
     _alwaysOpen = s?.isAlwaysOpen ?? false;
     _open = _fromSec(s?.openingTimeSec ?? 9 * 3600);
     _close = _fromSec(s?.closingTimeSec ?? 21 * 3600);
@@ -52,7 +61,8 @@ class _StoreEditorScreenState extends State<StoreEditorScreen> {
     super.dispose();
   }
 
-  static TimeOfDay _fromSec(int sec) => TimeOfDay(hour: (sec ~/ 3600) % 24, minute: (sec % 3600) ~/ 60);
+  static TimeOfDay _fromSec(int sec) =>
+      TimeOfDay(hour: (sec ~/ 3600) % 24, minute: (sec % 3600) ~/ 60);
   static int _toSec(TimeOfDay t) => t.hour * 3600 + t.minute * 60;
 
   String? _number(String? v, {double? min, double? max}) {
@@ -98,10 +108,18 @@ class _StoreEditorScreenState extends State<StoreEditorScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Delete ${store.name}?'),
-        content: const Text('Its visit history and learned aisle order are deleted too.'),
+        content: const Text(
+          'Its visit history and learned aisle order are deleted too.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -141,7 +159,8 @@ class _StoreEditorScreenState extends State<StoreEditorScreen> {
             TextFormField(
               controller: _name,
               decoration: decoration.copyWith(labelText: 'Name'),
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter a name' : null,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Enter a name' : null,
             ),
             const SizedBox(height: 12),
             Row(
@@ -149,7 +168,10 @@ class _StoreEditorScreenState extends State<StoreEditorScreen> {
                 Expanded(
                   child: TextFormField(
                     controller: _lat,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
                     decoration: decoration.copyWith(labelText: 'Latitude'),
                     validator: (v) => _number(v, min: -90, max: 90),
                   ),
@@ -158,7 +180,10 @@ class _StoreEditorScreenState extends State<StoreEditorScreen> {
                 Expanded(
                   child: TextFormField(
                     controller: _lon,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
                     decoration: decoration.copyWith(labelText: 'Longitude'),
                     validator: (v) => _number(v, min: -180, max: 180),
                   ),
@@ -218,7 +243,10 @@ class _StoreEditorScreenState extends State<StoreEditorScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () async {
-                        final t = await showTimePicker(context: context, initialTime: _open);
+                        final t = await showTimePicker(
+                          context: context,
+                          initialTime: _open,
+                        );
                         if (t != null) setState(() => _open = t);
                       },
                       child: Text('Opens ${_open.format(context)}'),
@@ -228,7 +256,10 @@ class _StoreEditorScreenState extends State<StoreEditorScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () async {
-                        final t = await showTimePicker(context: context, initialTime: _close);
+                        final t = await showTimePicker(
+                          context: context,
+                          initialTime: _close,
+                        );
                         if (t != null) setState(() => _close = t);
                       },
                       child: Text('Closes ${_close.format(context)}'),
@@ -237,7 +268,10 @@ class _StoreEditorScreenState extends State<StoreEditorScreen> {
                 ],
               ),
             const SizedBox(height: 16),
-            const Text('Sells / handles', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Sells / handles',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 4),
             const Text(
               '"Generic" means the store can serve any item.',

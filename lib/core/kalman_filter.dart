@@ -50,7 +50,10 @@ class KalmanGpsFilter {
       return null; // Discard noisy reading
     }
 
-    if (_lat == null || _lng == null || _variance == null || _lastTimestamp == null) {
+    if (_lat == null ||
+        _lng == null ||
+        _variance == null ||
+        _lastTimestamp == null) {
       // Initialize with first valid fix
       _lat = raw.latitude;
       _lng = raw.longitude;
@@ -60,7 +63,8 @@ class KalmanGpsFilter {
     }
 
     // Time delta in seconds
-    final dt = raw.timestamp.difference(_lastTimestamp!).inMilliseconds / 1000.0;
+    final dt =
+        raw.timestamp.difference(_lastTimestamp!).inMilliseconds / 1000.0;
     _lastTimestamp = raw.timestamp;
 
     if (dt > 0) {

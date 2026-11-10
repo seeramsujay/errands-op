@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../../data/models/active_route.dart';
 import '../../data/models/route_stop.dart';
 import '../../services/vrp_solver.dart';
@@ -21,7 +22,10 @@ class RoutePlanScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Planned Errand Itinerary', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Planned Errand Itinerary',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -59,37 +63,61 @@ class RoutePlanScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   // Solver status pill
-                  Builder(builder: (context) {
-                    final (Color color, String label) = switch (route.solverStatus) {
-                      SolverStatus.optimal => (const Color(0xFF10B981), 'OPTIMAL'),
-                      SolverStatus.feasible => (const Color(0xFF10B981), 'GOOD (heuristic)'),
-                      SolverStatus.relaxed => (const Color(0xFFF59E0B), 'HOURS CONFLICT'),
-                      _ => (const Color(0xFFF87171), 'NO ROUTE'),
-                    };
-                    return Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: color),
-                          ),
-                          child: Text(
-                            'STATUS: $label',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
-                          ),
+                  Builder(
+                    builder: (context) {
+                      final (
+                        Color color,
+                        String label,
+                      ) = switch (route.solverStatus) {
+                        SolverStatus.optimal => (
+                          const Color(0xFF10B981),
+                          'OPTIMAL',
                         ),
-                        const SizedBox(width: 8),
-                        const Flexible(
-                          child: Text(
-                            'Hybrid VRPTW Engine · includes trip home',
-                            style: TextStyle(fontSize: 11, color: Colors.white38),
-                          ),
+                        SolverStatus.feasible => (
+                          const Color(0xFF10B981),
+                          'GOOD (heuristic)',
                         ),
-                      ],
-                    );
-                  }),
+                        SolverStatus.relaxed => (
+                          const Color(0xFFF59E0B),
+                          'HOURS CONFLICT',
+                        ),
+                        _ => (const Color(0xFFF87171), 'NO ROUTE'),
+                      };
+                      return Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: color),
+                            ),
+                            child: Text(
+                              'STATUS: $label',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: color,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Flexible(
+                            child: Text(
+                              'Hybrid VRPTW Engine · includes trip home',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.white38,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -110,11 +138,18 @@ class RoutePlanScreen extends StatelessWidget {
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.warning_amber_rounded, color: Color(0xFFFBBF24), size: 18),
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Color(0xFFFBBF24),
+                        size: 18,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         'Heads up',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFBBF24)),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFFBBF24),
+                        ),
                       ),
                     ],
                   ),
@@ -124,7 +159,10 @@ class RoutePlanScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 2),
                       child: Text(
                         '• $warn',
-                        style: const TextStyle(fontSize: 12, color: Colors.white70),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white70,
+                        ),
                       ),
                     ),
                 ],
@@ -135,7 +173,11 @@ class RoutePlanScreen extends StatelessWidget {
           const SizedBox(height: 16),
           const Text(
             'Route Stops Sequence',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 8),
 
@@ -147,9 +189,17 @@ class RoutePlanScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 32, top: 4, bottom: 4),
                 child: Row(
                   children: [
-                    Container(width: 2, height: 20, color: const Color(0xFF334155)),
+                    Container(
+                      width: 2,
+                      height: 20,
+                      color: const Color(0xFF334155),
+                    ),
                     const SizedBox(width: 12),
-                    const Icon(Icons.arrow_downward, size: 14, color: Colors.white24),
+                    const Icon(
+                      Icons.arrow_downward,
+                      size: 14,
+                      color: Colors.white24,
+                    ),
                   ],
                 ),
               ),
@@ -172,8 +222,14 @@ class RoutePlanScreen extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            Text(label, style: const TextStyle(fontSize: 11, color: Colors.white38)),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: Colors.white38),
+            ),
           ],
         ),
       ],
@@ -211,7 +267,10 @@ class RoutePlanScreen extends StatelessWidget {
                   ),
                   child: Text(
                     '${stop.stopSequence}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -223,11 +282,17 @@ class RoutePlanScreen extends StatelessWidget {
                     children: [
                       Text(
                         store?.name ?? 'Store #${stop.stopSequence}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
                       Text(
                         'Arrival: $arrival  •  Depart: $departure',
-                        style: const TextStyle(fontSize: 12, color: Colors.white54),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white54,
+                        ),
                       ),
                     ],
                   ),
@@ -239,7 +304,10 @@ class RoutePlanScreen extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF334155),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       textStyle: const TextStyle(fontSize: 11),
                     ),
                     onPressed: () async {
@@ -247,7 +315,9 @@ class RoutePlanScreen extends StatelessWidget {
                       await state.simulateStoreEntry(store);
                       if (!context.mounted) return;
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const InStoreScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const InStoreScreen(),
+                        ),
                       );
                     },
                     child: const Text("I'm here"),
@@ -261,9 +331,13 @@ class RoutePlanScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
-                    stop.violatesClosingTime ? Icons.warning_amber_rounded : Icons.schedule,
+                    stop.violatesClosingTime
+                        ? Icons.warning_amber_rounded
+                        : Icons.schedule,
                     size: 14,
-                    color: stop.violatesClosingTime ? const Color(0xFFFBBF24) : Colors.white54,
+                    color: stop.violatesClosingTime
+                        ? const Color(0xFFFBBF24)
+                        : Colors.white54,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -271,7 +345,9 @@ class RoutePlanScreen extends StatelessWidget {
                       stop.warningMessage!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: stop.violatesClosingTime ? const Color(0xFFFBBF24) : Colors.white60,
+                        color: stop.violatesClosingTime
+                            ? const Color(0xFFFBBF24)
+                            : Colors.white60,
                       ),
                     ),
                   ),
@@ -287,7 +363,10 @@ class RoutePlanScreen extends StatelessWidget {
               children: [
                 if (stop.hasPerishable)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF06B6D4).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(4),
@@ -299,7 +378,10 @@ class RoutePlanScreen extends StatelessWidget {
                   ),
                 if (stop.isUserPinned)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(4),
@@ -318,20 +400,30 @@ class RoutePlanScreen extends StatelessWidget {
               const SizedBox(height: 6),
               const Text(
                 'Items to Pick:',
-                style: TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white54,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 4),
               for (final it in stop.itemsToPick.map(
-                (i) => state.items.where((live) => live.id == i.id).firstOrNull ?? i,
+                (i) =>
+                    state.items.where((live) => live.id == i.id).firstOrNull ??
+                    i,
               ))
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Row(
                     children: [
                       Icon(
-                        it.isCompleted ? Icons.check_circle : Icons.circle_outlined,
+                        it.isCompleted
+                            ? Icons.check_circle
+                            : Icons.circle_outlined,
                         size: 14,
-                        color: it.isCompleted ? const Color(0xFF14B8A6) : Colors.white38,
+                        color: it.isCompleted
+                            ? const Color(0xFF14B8A6)
+                            : Colors.white38,
                       ),
                       const SizedBox(width: 6),
                       Flexible(
@@ -339,8 +431,12 @@ class RoutePlanScreen extends StatelessWidget {
                           it.summary,
                           style: TextStyle(
                             fontSize: 13,
-                            decoration: it.isCompleted ? TextDecoration.lineThrough : null,
-                            color: it.isCompleted ? Colors.white38 : Colors.white,
+                            decoration: it.isCompleted
+                                ? TextDecoration.lineThrough
+                                : null,
+                            color: it.isCompleted
+                                ? Colors.white38
+                                : Colors.white,
                           ),
                         ),
                       ),

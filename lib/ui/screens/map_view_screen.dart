@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../state/app_state.dart';
 import '../widgets/route_map_canvas.dart';
 
@@ -12,7 +13,10 @@ class MapViewScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Spatial Radar & Geofence Canvas', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Spatial Radar & Geofence Canvas',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -64,19 +68,27 @@ class MapViewScreen extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      state.hasLiveFix ? 'Current Fix:' : 'Home (no GPS fix yet):',
-                      style: const TextStyle(fontSize: 11, color: Colors.white38),
-                    ),
-                    Text(
-                      '${state.userLat.toStringAsFixed(4)}, ${state.userLon.toStringAsFixed(4)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                    ),
-                  ],
-                 ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        state.hasLiveFix
+                            ? 'Current Fix:'
+                            : 'Home (no GPS fix yet):',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.white38,
+                        ),
+                      ),
+                      Text(
+                        '${state.userLat.toStringAsFixed(4)}, ${state.userLon.toStringAsFixed(4)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
@@ -87,7 +99,11 @@ class MapViewScreen extends StatelessWidget {
                   onPressed: () async {
                     // Simulate moving to the next unfinished stop of the plan.
                     final nextStop = state.activeRoute?.stops
-                        .where((s) => s.store != null && s.store!.id != state.activeStore?.id)
+                        .where(
+                          (s) =>
+                              s.store != null &&
+                              s.store!.id != state.activeStore?.id,
+                        )
                         .where((s) => s.itemsToPick.any((i) => !i.isCompleted))
                         .firstOrNull;
                     final target = nextStop?.store ?? state.stores.firstOrNull;
@@ -95,7 +111,11 @@ class MapViewScreen extends StatelessWidget {
                       await state.simulateDriveToStore(target);
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Simulated movement to ${target.name}')),
+                          SnackBar(
+                            content: Text(
+                              'Simulated movement to ${target.name}',
+                            ),
+                          ),
                         );
                       }
                     }
@@ -121,7 +141,10 @@ class MapViewScreen extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.white70)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: Colors.white70),
+        ),
       ],
     );
   }

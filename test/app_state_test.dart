@@ -11,7 +11,11 @@ void main() {
   setUp(() async {
     db = AppDatabase.instance;
     await db.init(inMemory: true);
-    state = AppState(database: db, solveInBackground: false, geofenceAutoTick: false);
+    state = AppState(
+      database: db,
+      solveInBackground: false,
+      geofenceAutoTick: false,
+    );
     await state.initialize();
   });
 
@@ -50,8 +54,13 @@ void main() {
 
   test('editing an item updates its category and perishability', () async {
     final item = state.items.first;
-    await state.editItem(item.id,
-        summary: 'Renewed passport', description: '', category: 'documents', isPerishable: false);
+    await state.editItem(
+      item.id,
+      summary: 'Renewed passport',
+      description: '',
+      category: 'documents',
+      isPerishable: false,
+    );
     final edited = state.items.firstWhere((i) => i.id == item.id);
     expect(edited.summary, 'Renewed passport');
     expect(edited.description, isNull);
@@ -60,17 +69,25 @@ void main() {
 
   test('solving sets Stop # overlays and clears stale ones', () async {
     await state.solveErrandRoute(departure: DateTime(2026, 9, 28, 11, 0));
-    expect(state.items.where((i) => i.optimizedOrderIndex != null), hasLength(5));
+    expect(
+      state.items.where((i) => i.optimizedOrderIndex != null),
+      hasLength(5),
+    );
     expect(state.activeRoute!.stops, isNotEmpty);
 
     final done = state.items.first;
     await state.toggleItemCompleted(done.id);
     await state.solveErrandRoute(departure: DateTime(2026, 9, 28, 11, 0));
-    expect(state.items.firstWhere((i) => i.id == done.id).optimizedOrderIndex, isNull);
+    expect(
+      state.items.firstWhere((i) => i.id == done.id).optimizedOrderIndex,
+      isNull,
+    );
   });
 
   test('a saved route reloads with its items and warnings', () async {
-    final route = await state.solveErrandRoute(departure: DateTime(2026, 9, 28, 16, 50));
+    final route = await state.solveErrandRoute(
+      departure: DateTime(2026, 9, 28, 16, 50),
+    );
     final reloaded = await db.getActiveRoute();
     expect(reloaded!.warnings, route.warnings);
     expect(
@@ -80,10 +97,15 @@ void main() {
   });
 
   test('in-store list shows what the route assigned to that store', () async {
-    final route = await state.solveErrandRoute(departure: DateTime(2026, 9, 28, 11, 0));
+    final route = await state.solveErrandRoute(
+      departure: DateTime(2026, 9, 28, 11, 0),
+    );
     for (final stop in route.stops) {
       final items = await state.getInStoreWalkOrderItems(stop.store!);
-      expect(items.map((i) => i.id).toSet(), stop.itemsToPick.map((i) => i.id).toSet());
+      expect(
+        items.map((i) => i.id).toSet(),
+        stop.itemsToPick.map((i) => i.id).toSet(),
+      );
     }
   });
 
@@ -97,7 +119,12 @@ void main() {
     await state.simulateStoreExit();
 
     final prefs = await db.getPreferences();
-    expect(prefs.any((p) => p.storeId == 'store_dmart' && p.itemCategory == 'frozen'), isTrue);
+    expect(
+      prefs.any(
+        (p) => p.storeId == 'store_dmart' && p.itemCategory == 'frozen',
+      ),
+      isTrue,
+    );
   });
 
   test('stores can be added, edited and deleted', () async {
@@ -112,7 +139,10 @@ void main() {
     expect(state.stores.any((s) => s.name == 'Corner Shop'), isTrue);
 
     await state.saveStore(store.copyWith(name: 'Corner Shop 24x7'));
-    expect(state.stores.where((s) => s.id == 'store_new').single.name, 'Corner Shop 24x7');
+    expect(
+      state.stores.where((s) => s.id == 'store_new').single.name,
+      'Corner Shop 24x7',
+    );
 
     await state.solveErrandRoute();
     await state.deleteStore('store_dmart');

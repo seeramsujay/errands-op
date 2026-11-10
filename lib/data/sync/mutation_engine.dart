@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+
 import '../../core/categories.dart';
 import '../../core/hlc.dart';
 import '../database/app_database.dart';
@@ -54,14 +55,16 @@ class MutationEngine {
       await database.discardPendingMutations(itemId, field: field);
     }
 
-    await database.enqueueMutation(MutationRecord(
-      id: const Uuid().v4(),
-      itemId: itemId,
-      field: field,
-      value: value,
-      hlcTimestamp: hlc.now().toString(),
-      createdAt: DateTime.now(),
-    ));
+    await database.enqueueMutation(
+      MutationRecord(
+        id: const Uuid().v4(),
+        itemId: itemId,
+        field: field,
+        value: value,
+        hlcTimestamp: hlc.now().toString(),
+        createdAt: DateTime.now(),
+      ),
+    );
 
     if (wsClient.isConnected) await flushQueue();
   }
@@ -115,9 +118,18 @@ class MutationEngine {
       if (uid == null) continue;
 
       final res = switch (m.field) {
-        SyncField.status => await wsClient.updateItem(uid: uid, status: item.status),
-        SyncField.summary => await wsClient.updateItem(uid: uid, rename: item.summary),
-        _ => await wsClient.updateItem(uid: uid, description: item.description ?? ''),
+        SyncField.status => await wsClient.updateItem(
+          uid: uid,
+          status: item.status,
+        ),
+        SyncField.summary => await wsClient.updateItem(
+          uid: uid,
+          rename: item.summary,
+        ),
+        _ => await wsClient.updateItem(
+          uid: uid,
+          description: item.description ?? '',
+        ),
       };
       await _record(m, res);
     }
@@ -140,7 +152,10 @@ class MutationEngine {
     final remoteUids = <String>{};
     var nextOrder = localItems.isEmpty
         ? 0
-        : localItems.map((i) => i.humanOrderIndex).reduce((a, b) => a > b ? a : b) + 1;
+        : localItems
+                  .map((i) => i.humanOrderIndex)
+                  .reduce((a, b) => a > b ? a : b) +
+              1;
 
     for (final remote in remoteItems) {
       remoteUids.add(remote.uid);
@@ -148,9 +163,12 @@ class MutationEngine {
 
       if (local == null) {
         // An item we added ourselves comes back with HA's uid: adopt it by name.
-        final match = localItems.where((i) =>
-            i.haUid == null &&
-            i.summary.trim().toLowerCase() == remote.summary.trim().toLowerCase());
+        final match = localItems.where(
+          (i) =>
+              i.haUid == null &&
+              i.summary.trim().toLowerCase() ==
+                  remote.summary.trim().toLowerCase(),
+        );
         if (match.isNotEmpty) {
           local = match.first.copyWith(haUid: remote.uid);
           localItems.remove(match.first);
@@ -169,13 +187,16 @@ class MutationEngine {
 
       if (local.summary != remote.summary ||
           local.status != remote.status ||
-          (remote.description != null && local.description != remote.description)) {
-        await database.updateItem(local.copyWith(
-          summary: remote.summary,
-          status: remote.status,
-          description: remote.description,
-          updatedAt: DateTime.now(),
-        ));
+          (remote.description != null &&
+              local.description != remote.description)) {
+        await database.updateItem(
+          local.copyWith(
+            summary: remote.summary,
+            status: remote.status,
+            description: remote.description,
+            updatedAt: DateTime.now(),
+          ),
+        );
         changed = true;
       }
     }

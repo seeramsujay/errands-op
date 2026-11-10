@@ -4,7 +4,9 @@ import 'package:op_list/data/database/app_database.dart';
 import 'package:op_list/main.dart';
 
 void main() {
-  testWidgets('app boots with sample data and every tab renders', (tester) async {
+  testWidgets('app boots with sample data and every tab renders', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(420, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.runAsync(() => AppDatabase.instance.init(inMemory: true));
@@ -12,7 +14,9 @@ void main() {
     await tester.pumpWidget(const OpListApp());
     // SQLite runs on a background isolate: let real async work finish.
     for (var i = 0; i < 5; i++) {
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
       await tester.pump();
     }
 
@@ -24,7 +28,9 @@ void main() {
       await tester.tap(find.text(tab).last);
       await tester.pump();
       for (var i = 0; i < 3; i++) {
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
         await tester.pump();
       }
       expect(tester.takeException(), isNull, reason: 'tab $tab threw');
@@ -36,7 +42,10 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Vanilla ice cream');
     await tester.pump();
     expect(
-      find.descendant(of: find.byType(DropdownButton<String>), matching: find.text('Frozen Foods')),
+      find.descendant(
+        of: find.byType(DropdownButton<String>),
+        matching: find.text('Frozen Foods'),
+      ),
       findsOneWidget,
     );
 

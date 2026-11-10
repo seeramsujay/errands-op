@@ -75,7 +75,10 @@ class VisitCheckoff {
     };
   }
 
-  factory VisitCheckoff.fromMap(Map<String, dynamic> map, {String itemCategory = 'generic'}) {
+  factory VisitCheckoff.fromMap(
+    Map<String, dynamic> map, {
+    String itemCategory = 'generic',
+  }) {
     return VisitCheckoff(
       id: map['id'] as String,
       visitId: map['visit_id'] as String,
