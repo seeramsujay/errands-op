@@ -4,7 +4,9 @@ import 'package:op_list/data/models/todo_item.dart';
 import 'package:op_list/ui/widgets/item_tile.dart';
 
 void main() {
-  testWidgets('ItemTile renders summary, badges, and interaction buttons', (WidgetTester tester) async {
+  testWidgets('ItemTile renders summary, badges, and interaction buttons', (
+    WidgetTester tester,
+  ) async {
     final now = DateTime.now();
     final item = TodoItem(
       id: 'test_1',

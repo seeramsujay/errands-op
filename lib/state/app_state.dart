@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
+
 import '../core/hlc.dart';
 import '../core/kalman_filter.dart';
 import '../data/database/app_database.dart';
@@ -70,9 +72,15 @@ class AppState extends ChangeNotifier {
     bool geofenceAutoTick = true,
   }) : locationService = locationService ?? LocationService() {
     this.haClient = haClient ?? HomeAssistantWsClient();
-    mutationEngine = MutationEngine(database: database, wsClient: this.haClient);
+    mutationEngine = MutationEngine(
+      database: database,
+      wsClient: this.haClient,
+    );
     matrixService = DistanceMatrixService(database: database);
-    vrpSolver = VrpSolver(matrixService: matrixService, runInBackground: solveInBackground);
+    vrpSolver = VrpSolver(
+      matrixService: matrixService,
+      runInBackground: solveInBackground,
+    );
     layoutLearningEngine = LayoutLearningEngine(database: database);
     geofenceEngine = GeofenceEngine(
       database: database,
@@ -139,14 +147,20 @@ class AppState extends ChangeNotifier {
 
   /// Initialize state from local database
   Future<void> initialize() async {
-    final lat = double.tryParse(await database.getSetting(SettingKeys.homeLat) ?? '');
-    final lon = double.tryParse(await database.getSetting(SettingKeys.homeLon) ?? '');
+    final lat = double.tryParse(
+      await database.getSetting(SettingKeys.homeLat) ?? '',
+    );
+    final lon = double.tryParse(
+      await database.getSetting(SettingKeys.homeLon) ?? '',
+    );
     if (lat != null && lon != null) {
       _homeLat = lat;
       _homeLon = lon;
       _homeIsSet = true;
     }
-    matrixService.osrmEndpoint = await database.getSetting(SettingKeys.osrmEndpoint);
+    matrixService.osrmEndpoint = await database.getSetting(
+      SettingKeys.osrmEndpoint,
+    );
 
     var nodeId = await database.getSetting(SettingKeys.nodeId);
     if (nodeId == null) {
@@ -158,7 +172,9 @@ class AppState extends ChangeNotifier {
     await haClient.configure(
       baseUrl: await database.getSetting(SettingKeys.haUrl) ?? '',
       accessToken: await database.getSetting(SettingKeys.haToken) ?? '',
-      entityId: await database.getSetting(SettingKeys.haEntityId) ?? haClient.entityId,
+      entityId:
+          await database.getSetting(SettingKeys.haEntityId) ??
+          haClient.entityId,
     );
     await geofenceEngine.restoreActiveVisit();
     _activeStore = geofenceEngine.activeStore;
@@ -209,7 +225,9 @@ class AppState extends ChangeNotifier {
   }) async {
     await database.setSetting(SettingKeys.haUrl, url.trim());
     // Blank token field means "keep the saved token".
-    if (token.trim().isNotEmpty) await database.setSetting(SettingKeys.haToken, token.trim());
+    if (token.trim().isNotEmpty) {
+      await database.setSetting(SettingKeys.haToken, token.trim());
+    }
     await database.setSetting(SettingKeys.haEntityId, entityId.trim());
     await haClient.configure(
       baseUrl: url,
@@ -228,7 +246,11 @@ class AppState extends ChangeNotifier {
   Future<void> forgetHa() async {
     await database.setSetting(SettingKeys.haUrl, null);
     await database.setSetting(SettingKeys.haToken, null);
-    await haClient.configure(baseUrl: '', accessToken: '', entityId: haClient.entityId);
+    await haClient.configure(
+      baseUrl: '',
+      accessToken: '',
+      entityId: haClient.entityId,
+    );
     notifyListeners();
   }
 
@@ -255,7 +277,11 @@ class AppState extends ChangeNotifier {
   /// Manual drag & drop inside [visible] (the possibly filtered list on
   /// screen). Hidden items keep their slots; the visible ones are permuted
   /// among the slots they occupy, so filtering never scrambles the list.
-  Future<void> reorderVisible(List<TodoItem> visible, int oldIndex, int newIndex) async {
+  Future<void> reorderVisible(
+    List<TodoItem> visible,
+    int oldIndex,
+    int newIndex,
+  ) async {
     if (oldIndex < 0 || oldIndex >= visible.length) return;
     final reordered = List<TodoItem>.from(visible);
     final moved = reordered.removeAt(oldIndex);
@@ -278,10 +304,9 @@ class AppState extends ChangeNotifier {
     final item = await database.getItem(itemId);
     if (item == null) return;
 
-    await database.updateItem(item.copyWith(
-      isPinned: !item.isPinned,
-      updatedAt: DateTime.now(),
-    ));
+    await database.updateItem(
+      item.copyWith(isPinned: !item.isPinned, updatedAt: DateTime.now()),
+    );
     await refreshData();
   }
 
@@ -291,10 +316,9 @@ class AppState extends ChangeNotifier {
     if (item == null) return;
 
     final newStatus = item.isCompleted ? 'needs_action' : 'completed';
-    await database.updateItem(item.copyWith(
-      status: newStatus,
-      updatedAt: DateTime.now(),
-    ));
+    await database.updateItem(
+      item.copyWith(status: newStatus, updatedAt: DateTime.now()),
+    );
 
     // Inside a store (including the exit grace period), check-offs train the
     // walk-order graph and the item -> store preference.
@@ -307,13 +331,22 @@ class AppState extends ChangeNotifier {
           itemId: item.id,
           itemCategory: item.category,
         );
-        if (store != null) await database.incrementPreference(item.category, store.id);
+        if (store != null) {
+          await database.incrementPreference(item.category, store.id);
+        }
       } else {
-        await layoutLearningEngine.retractCheckoff(visitId: visit.id, itemId: item.id);
+        await layoutLearningEngine.retractCheckoff(
+          visitId: visit.id,
+          itemId: item.id,
+        );
       }
     }
 
-    await mutationEngine.queueMutation(itemId: item.id, field: SyncField.status, value: newStatus);
+    await mutationEngine.queueMutation(
+      itemId: item.id,
+      field: SyncField.status,
+      value: newStatus,
+    );
     await refreshData();
   }
 
@@ -342,7 +375,11 @@ class AppState extends ChangeNotifier {
     );
 
     await database.insertItem(newItem);
-    await mutationEngine.queueMutation(itemId: newItem.id, field: SyncField.create, value: null);
+    await mutationEngine.queueMutation(
+      itemId: newItem.id,
+      field: SyncField.create,
+      value: null,
+    );
     await refreshData();
   }
 
@@ -356,29 +393,40 @@ class AppState extends ChangeNotifier {
   }) async {
     final item = await database.getItem(itemId);
     if (item == null) return;
-    final newDescription = (description == null || description.isEmpty) ? null : description;
+    final newDescription = (description == null || description.isEmpty)
+        ? null
+        : description;
 
-    await database.updateItem(TodoItem(
-      id: item.id,
-      haEntityId: item.haEntityId,
-      haUid: item.haUid,
-      summary: summary,
-      description: newDescription,
-      category: category,
-      isPerishable: isPerishable,
-      status: item.status,
-      humanOrderIndex: item.humanOrderIndex,
-      optimizedOrderIndex: item.optimizedOrderIndex,
-      isPinned: item.isPinned,
-      createdAt: item.createdAt,
-      updatedAt: DateTime.now(),
-    ));
+    await database.updateItem(
+      TodoItem(
+        id: item.id,
+        haEntityId: item.haEntityId,
+        haUid: item.haUid,
+        summary: summary,
+        description: newDescription,
+        category: category,
+        isPerishable: isPerishable,
+        status: item.status,
+        humanOrderIndex: item.humanOrderIndex,
+        optimizedOrderIndex: item.optimizedOrderIndex,
+        isPinned: item.isPinned,
+        createdAt: item.createdAt,
+        updatedAt: DateTime.now(),
+      ),
+    );
     if (summary != item.summary) {
-      await mutationEngine.queueMutation(itemId: itemId, field: SyncField.summary, value: summary);
+      await mutationEngine.queueMutation(
+        itemId: itemId,
+        field: SyncField.summary,
+        value: summary,
+      );
     }
     if (newDescription != item.description) {
       await mutationEngine.queueMutation(
-          itemId: itemId, field: SyncField.description, value: newDescription);
+        itemId: itemId,
+        field: SyncField.description,
+        value: newDescription,
+      );
     }
     await refreshData();
   }
@@ -388,7 +436,11 @@ class AppState extends ChangeNotifier {
     final item = await database.getItem(itemId);
     if (item == null) return;
     await database.deleteItem(itemId);
-    await mutationEngine.queueMutation(itemId: itemId, field: SyncField.deleted, value: item.haUid);
+    await mutationEngine.queueMutation(
+      itemId: itemId,
+      field: SyncField.deleted,
+      value: item.haUid,
+    );
     await refreshData();
   }
 
@@ -400,7 +452,9 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> deleteStore(String storeId) async {
-    if (geofenceEngine.activeStore?.id == storeId) await geofenceEngine.forceExitStore();
+    if (geofenceEngine.activeStore?.id == storeId) {
+      await geofenceEngine.forceExitStore();
+    }
     await database.deleteStore(storeId);
     await refreshData();
   }
@@ -443,8 +497,11 @@ class AppState extends ChangeNotifier {
   /// active route assigned to this store come first; with no route, every
   /// pending item the store stocks is shown.
   Future<List<TodoItem>> getInStoreWalkOrderItems(Store store) async {
-    final stop = _activeRoute?.stops.where((s) => s.storeId == store.id).firstOrNull;
-    final routedIds = stop?.itemsToPick.map((i) => i.id).toSet() ?? const <String>{};
+    final stop = _activeRoute?.stops
+        .where((s) => s.storeId == store.id)
+        .firstOrNull;
+    final routedIds =
+        stop?.itemsToPick.map((i) => i.id).toSet() ?? const <String>{};
 
     final storeItems = _items.where((i) {
       if (i.isCompleted) return false;
@@ -469,7 +526,9 @@ class AppState extends ChangeNotifier {
     final rank = {for (var r = 0; r < walkOrder.length; r++) walkOrder[r]: r};
     final indexed = storeItems.asMap().entries.toList()
       ..sort((a, b) {
-        final byAisle = rank[a.value.category]!.compareTo(rank[b.value.category]!);
+        final byAisle = rank[a.value.category]!.compareTo(
+          rank[b.value.category]!,
+        );
         return byAisle != 0 ? byAisle : a.key.compareTo(b.key);
       });
     return indexed.map((e) => e.value).toList();
@@ -479,7 +538,12 @@ class AppState extends ChangeNotifier {
 
   Future<LocationStartResult> startGpsTracking() async {
     final result = await locationService.start((fix) {
-      updateUserLocation(fix.latitude, fix.longitude, accuracy: fix.accuracy, at: fix.timestamp);
+      updateUserLocation(
+        fix.latitude,
+        fix.longitude,
+        accuracy: fix.accuracy,
+        at: fix.timestamp,
+      );
     });
     _gpsTracking = result == LocationStartResult.started;
     notifyListeners();
@@ -503,12 +567,14 @@ class AppState extends ChangeNotifier {
     _userFixAt = at ?? DateTime.now();
     notifyListeners();
 
-    await geofenceEngine.onLocationUpdate(GeoPoint(
-      latitude: lat,
-      longitude: lon,
-      accuracy: accuracy,
-      timestamp: _userFixAt!,
-    ));
+    await geofenceEngine.onLocationUpdate(
+      GeoPoint(
+        latitude: lat,
+        longitude: lon,
+        accuracy: accuracy,
+        timestamp: _userFixAt!,
+      ),
+    );
   }
 
   // --- Simulation Triggers for User Demos ---
@@ -533,11 +599,16 @@ class AppState extends ChangeNotifier {
 
   /// Pretend someone added [summary] in Home Assistant (works offline).
   Future<void> simulateHaItemAdd(String summary) async {
-    final remote = HaTodoItem(uid: 'sim_${DateTime.now().millisecondsSinceEpoch}', summary: summary);
+    final remote = HaTodoItem(
+      uid: 'sim_${DateTime.now().millisecondsSinceEpoch}',
+      summary: summary,
+    );
     final maxOrder = _items.isEmpty
         ? -1
         : _items.map((i) => i.humanOrderIndex).reduce((a, b) => a > b ? a : b);
-    await database.insertItem(mutationEngine.newItemFromRemote(remote, maxOrder + 1));
+    await database.insertItem(
+      mutationEngine.newItemFromRemote(remote, maxOrder + 1),
+    );
     await refreshData();
   }
 

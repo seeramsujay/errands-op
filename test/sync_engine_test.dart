@@ -19,7 +19,11 @@ void main() {
     await db.init(inMemory: true);
     ha = FakeHomeAssistant();
     await ha.start();
-    state = AppState(database: db, solveInBackground: false, geofenceAutoTick: false);
+    state = AppState(
+      database: db,
+      solveInBackground: false,
+      geofenceAutoTick: false,
+    );
   });
 
   tearDown(() async {
@@ -36,7 +40,8 @@ void main() {
     await state.initialize();
   }
 
-  TodoItem? local(String summary) => state.items.where((i) => i.summary == summary).firstOrNull;
+  TodoItem? local(String summary) =>
+      state.items.where((i) => i.summary == summary).firstOrNull;
 
   List<Map<String, dynamic>> calls(String service) =>
       ha.serviceCalls.where((c) => c['service'] == service).toList();
@@ -50,55 +55,80 @@ void main() {
     expect(t3.isAfter(t2), isTrue);
     expect(t1.toString(), contains('device_test'));
 
-    final merged = hlc.update(HlcTimestamp(physicalTime: t3.physicalTime + 60000, counter: 7, nodeId: 'x'));
+    final merged = hlc.update(
+      HlcTimestamp(
+        physicalTime: t3.physicalTime + 60000,
+        counter: 7,
+        nodeId: 'x',
+      ),
+    );
     expect(merged.isAfter(t3), isTrue);
     expect(hlc.now().isAfter(merged), isTrue);
   });
 
   test('websocket URL is derived from what users paste', () {
-    expect(HomeAssistantWsClient.websocketUri('homeassistant.local').toString(),
-        'ws://homeassistant.local:8123/api/websocket');
-    expect(HomeAssistantWsClient.websocketUri('http://192.168.1.5:8123/').toString(),
-        'ws://192.168.1.5:8123/api/websocket');
-    expect(HomeAssistantWsClient.websocketUri('https://abc.ui.nabu.casa').toString(),
-        'wss://abc.ui.nabu.casa/api/websocket');
+    expect(
+      HomeAssistantWsClient.websocketUri('homeassistant.local').toString(),
+      'ws://homeassistant.local:8123/api/websocket',
+    );
+    expect(
+      HomeAssistantWsClient.websocketUri('http://192.168.1.5:8123/').toString(),
+      'ws://192.168.1.5:8123/api/websocket',
+    );
+    expect(
+      HomeAssistantWsClient.websocketUri('https://abc.ui.nabu.casa').toString(),
+      'wss://abc.ui.nabu.casa/api/websocket',
+    );
   });
 
-  test('without settings the app stays local-only and keeps edits queued', () async {
-    await state.initialize();
-    expect(state.haState, HaConnectionState.notConfigured);
-    await state.addItem(summary: 'Bread', category: 'bakery');
-    expect(await db.getPendingMutations(), hasLength(1));
-  });
+  test(
+    'without settings the app stays local-only and keeps edits queued',
+    () async {
+      await state.initialize();
+      expect(state.haState, HaConnectionState.notConfigured);
+      await state.addItem(summary: 'Bread', category: 'bakery');
+      expect(await db.getPendingMutations(), hasLength(1));
+    },
+  );
 
-  test('connects, authenticates and imports HA items with guessed categories', () async {
-    ha.addRemote('Ice cream');
-    ha.addRemote('Paracetamol');
-    await connect();
+  test(
+    'connects, authenticates and imports HA items with guessed categories',
+    () async {
+      ha.addRemote('Ice cream');
+      ha.addRemote('Paracetamol');
+      await connect();
 
-    await eventually(() => local('Ice cream') != null && local('Paracetamol') != null);
-    expect(state.haState, HaConnectionState.connected);
-    expect(local('Ice cream')!.category, 'frozen');
-    expect(local('Ice cream')!.isPerishable, isTrue);
-    expect(local('Paracetamol')!.category, 'pharmacy');
-    // Local sample items were not pushed to HA.
-    expect(calls('add_item'), isEmpty);
-  });
+      await eventually(
+        () => local('Ice cream') != null && local('Paracetamol') != null,
+      );
+      expect(state.haState, HaConnectionState.connected);
+      expect(local('Ice cream')!.category, 'frozen');
+      expect(local('Ice cream')!.isPerishable, isTrue);
+      expect(local('Paracetamol')!.category, 'pharmacy');
+      // Local sample items were not pushed to HA.
+      expect(calls('add_item'), isEmpty);
+    },
+  );
 
-  test('checking an item off sends update_item with HA uid and only the status', () async {
-    final uid = ha.addRemote('Milk');
-    await connect();
-    await eventually(() => local('Milk') != null);
+  test(
+    'checking an item off sends update_item with HA uid and only the status',
+    () async {
+      final uid = ha.addRemote('Milk');
+      await connect();
+      await eventually(() => local('Milk') != null);
 
-    await state.toggleItemCompleted(local('Milk')!.id);
-    await eventually(() => calls('update_item').isNotEmpty);
+      await state.toggleItemCompleted(local('Milk')!.id);
+      await eventually(() => calls('update_item').isNotEmpty);
 
-    final data = calls('update_item').single['service_data'] as Map;
-    expect(data, {'item': uid, 'status': 'completed'});
-    expect(calls('update_item').single['target'], {'entity_id': 'todo.shopping_list'});
-    expect(ha.items.single['status'], 'completed');
-    expect(await db.getPendingMutations(), isEmpty);
-  });
+      final data = calls('update_item').single['service_data'] as Map;
+      expect(data, {'item': uid, 'status': 'completed'});
+      expect(calls('update_item').single['target'], {
+        'entity_id': 'todo.shopping_list',
+      });
+      expect(ha.items.single['status'], 'completed');
+      expect(await db.getPendingMutations(), isEmpty);
+    },
+  );
 
   test('deleting an item removes it in Home Assistant too', () async {
     final uid = ha.addRemote('Batteries');
@@ -111,21 +141,28 @@ void main() {
     expect(ha.items, isEmpty);
   });
 
-  test('items added offline are pushed on connect and adopted without duplicates', () async {
-    await state.initialize(); // not configured yet
-    await state.addItem(summary: 'Hex key', category: 'hardware');
+  test(
+    'items added offline are pushed on connect and adopted without duplicates',
+    () async {
+      await state.initialize(); // not configured yet
+      await state.addItem(summary: 'Hex key', category: 'hardware');
 
-    await db.setSetting(SettingKeys.haUrl, ha.url);
-    await state.saveHaSettings(url: ha.url, token: 'good-token', entityId: 'todo.shopping_list');
+      await db.setSetting(SettingKeys.haUrl, ha.url);
+      await state.saveHaSettings(
+        url: ha.url,
+        token: 'good-token',
+        entityId: 'todo.shopping_list',
+      );
 
-    await eventually(() => ha.items.any((i) => i['summary'] == 'Hex key'));
-    await eventually(() => local('Hex key')?.haUid != null);
-    expect(state.items.where((i) => i.summary == 'Hex key'), hasLength(1));
-    expect(local('Hex key')!.category, 'hardware'); // local metadata kept
+      await eventually(() => ha.items.any((i) => i['summary'] == 'Hex key'));
+      await eventually(() => local('Hex key')?.haUid != null);
+      expect(state.items.where((i) => i.summary == 'Hex key'), hasLength(1));
+      expect(local('Hex key')!.category, 'hardware'); // local metadata kept
 
-    await state.toggleItemCompleted(local('Hex key')!.id);
-    await eventually(() => ha.items.single['status'] == 'completed');
-  });
+      await state.toggleItemCompleted(local('Hex key')!.id);
+      await eventually(() => ha.items.single['status'] == 'completed');
+    },
+  );
 
   test('remote rename/complete/delete flow into the local list, keeping local metadata', () async {
     final uid = ha.addRemote('Eggs');
@@ -151,7 +188,11 @@ void main() {
     await state.deleteItem(id);
     expect(await db.getPendingMutations(), isEmpty);
 
-    await state.saveHaSettings(url: ha.url, token: 'good-token', entityId: 'todo.shopping_list');
+    await state.saveHaSettings(
+      url: ha.url,
+      token: 'good-token',
+      entityId: 'todo.shopping_list',
+    );
     await eventually(() => state.haState == HaConnectionState.connected);
     await Future<void>.delayed(const Duration(milliseconds: 200));
     expect(ha.serviceCalls, isEmpty);
@@ -163,9 +204,16 @@ void main() {
     await eventually(() => local('Soap') != null);
     final soap = local('Soap')!;
 
-    await state.editItem(soap.id,
-        summary: 'Soap bars', description: 'unscented', category: soap.category, isPerishable: false);
-    await eventually(() => ha.items.any((i) => i['uid'] == uid && i['summary'] == 'Soap bars'));
+    await state.editItem(
+      soap.id,
+      summary: 'Soap bars',
+      description: 'unscented',
+      category: soap.category,
+      isPerishable: false,
+    );
+    await eventually(
+      () => ha.items.any((i) => i['uid'] == uid && i['summary'] == 'Soap bars'),
+    );
     // The rejected description is retried a few times, then parked as failed.
     for (var i = 0; i < 6; i++) {
       await state.mutationEngine.flushQueue();
@@ -182,17 +230,28 @@ void main() {
     expect(ha.connectionCount, 1);
   });
 
-  test('reconnects after the connection drops and syncs edits made meanwhile', () async {
-    final uid = ha.addRemote('Rice');
-    await connect();
-    await eventually(() => local('Rice') != null);
+  test(
+    'reconnects after the connection drops and syncs edits made meanwhile',
+    () async {
+      final uid = ha.addRemote('Rice');
+      await connect();
+      await eventually(() => local('Rice') != null);
 
-    await ha.dropConnections();
-    await eventually(() => state.haState != HaConnectionState.connected);
-    await state.toggleItemCompleted(local('Rice')!.id); // queued while offline
+      await ha.dropConnections();
+      await eventually(() => state.haState != HaConnectionState.connected);
+      await state.toggleItemCompleted(
+        local('Rice')!.id,
+      ); // queued while offline
 
-    await eventually(() => state.haState == HaConnectionState.connected,
-        timeout: const Duration(seconds: 8));
-    await eventually(() => ha.items.firstWhere((i) => i['uid'] == uid)['status'] == 'completed');
-  });
+      await eventually(
+        () => state.haState == HaConnectionState.connected,
+        timeout: const Duration(seconds: 8),
+      );
+      await eventually(
+        () =>
+            ha.items.firstWhere((i) => i['uid'] == uid)['status'] ==
+            'completed',
+      );
+    },
+  );
 }

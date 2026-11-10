@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+
 import 'package:web_socket_channel/web_socket_channel.dart';
+
 import '../../core/constants.dart';
 
 enum HaConnectionState {
@@ -75,13 +77,16 @@ class HomeAssistantWsClient {
     this._entityId = AppConstants.defaultHaEntityId,
     WebSocketConnector? connector,
   }) : _connector = connector ?? WebSocketChannel.connect {
-    _state = isConfigured ? HaConnectionState.disconnected : HaConnectionState.notConfigured;
+    _state = isConfigured
+        ? HaConnectionState.disconnected
+        : HaConnectionState.notConfigured;
   }
 
   String get baseUrl => _baseUrl;
   String get entityId => _entityId;
   bool get hasToken => _accessToken.isNotEmpty;
-  bool get isConfigured => _baseUrl.trim().isNotEmpty && _accessToken.isNotEmpty;
+  bool get isConfigured =>
+      _baseUrl.trim().isNotEmpty && _accessToken.isNotEmpty;
   bool get isConnected => _state == HaConnectionState.connected;
   HaConnectionState get state => _state;
   String? get lastError => _lastError;
@@ -101,7 +106,9 @@ class HomeAssistantWsClient {
     return Uri(
       scheme: secure ? 'wss' : 'ws',
       host: parsed.host,
-      port: parsed.hasPort ? parsed.port : (hadScheme ? null : AppConstants.defaultWsPort),
+      port: parsed.hasPort
+          ? parsed.port
+          : (hadScheme ? null : AppConstants.defaultWsPort),
       path: '/api/websocket',
     );
   }
@@ -121,9 +128,15 @@ class HomeAssistantWsClient {
     disconnect();
     _baseUrl = baseUrl.trim();
     _accessToken = accessToken.trim();
-    _entityId = entityId.trim().isEmpty ? AppConstants.defaultHaEntityId : entityId.trim();
+    _entityId = entityId.trim().isEmpty
+        ? AppConstants.defaultHaEntityId
+        : entityId.trim();
     _lastError = null;
-    _setState(isConfigured ? HaConnectionState.disconnected : HaConnectionState.notConfigured);
+    _setState(
+      isConfigured
+          ? HaConnectionState.disconnected
+          : HaConnectionState.notConfigured,
+    );
     if (wasWanted && isConfigured) await connect();
   }
 
@@ -188,7 +201,13 @@ class HomeAssistantWsClient {
           final items = event?['items'] as List?;
           if (items != null && !_itemsController.isClosed) {
             _itemsController.add(
-              items.map((i) => HaTodoItem.fromJson(Map<String, dynamic>.from(i as Map))).toList(),
+              items
+                  .map(
+                    (i) => HaTodoItem.fromJson(
+                      Map<String, dynamic>.from(i as Map),
+                    ),
+                  )
+                  .toList(),
             );
           }
         }
@@ -202,10 +221,13 @@ class HomeAssistantWsClient {
           completer.complete(HaResult(success: true, result: data['result']));
         } else {
           final error = data['error'] as Map?;
-          completer.complete(HaResult(
-            success: false,
-            error: (error?['message'] ?? error?['code'] ?? 'request failed').toString(),
-          ));
+          completer.complete(
+            HaResult(
+              success: false,
+              error: (error?['message'] ?? error?['code'] ?? 'request failed')
+                  .toString(),
+            ),
+          );
         }
         return;
     }
@@ -214,7 +236,10 @@ class HomeAssistantWsClient {
   Future<void> _subscribeToTodo() async {
     // Events for this subscription carry the id of the subscribe request.
     _subscriptionId = _messageId;
-    final res = await sendMessage({'type': 'todo/item/subscribe', 'entity_id': _entityId});
+    final res = await sendMessage({
+      'type': 'todo/item/subscribe',
+      'entity_id': _entityId,
+    });
     if (!res.success && _state == HaConnectionState.connected) {
       _lastError = 'Could not subscribe to $_entityId: ${res.error}';
       _setState(HaConnectionState.error);
@@ -224,7 +249,9 @@ class HomeAssistantWsClient {
   void _startPing() {
     _pingTimer?.cancel();
     _pingTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
-      final res = await sendMessage({'type': 'ping'}, timeout: const Duration(seconds: 10));
+      final res = await sendMessage({
+        'type': 'ping',
+      }, timeout: const Duration(seconds: 10));
       if (!res.success && _state == HaConnectionState.connected) {
         _onError('ping timeout');
       }
@@ -237,7 +264,9 @@ class HomeAssistantWsClient {
     Duration timeout = const Duration(seconds: 10),
   }) {
     if (_channel == null) {
-      return Future.value(const HaResult(success: false, error: 'not connected'));
+      return Future.value(
+        const HaResult(success: false, error: 'not connected'),
+      );
     }
 
     final id = _messageId++;
@@ -262,7 +291,10 @@ class HomeAssistantWsClient {
     }
   }
 
-  Future<HaResult> _callTodoService(String service, Map<String, dynamic> serviceData) {
+  Future<HaResult> _callTodoService(
+    String service,
+    Map<String, dynamic> serviceData,
+  ) {
     return sendMessage({
       'type': 'call_service',
       'domain': 'todo',
@@ -323,7 +355,9 @@ class HomeAssistantWsClient {
     _channel = null;
     _subscriptionId = null;
     for (final c in _pendingRequests.values) {
-      if (!c.isCompleted) c.complete(const HaResult(success: false, error: 'disconnected'));
+      if (!c.isCompleted) {
+        c.complete(const HaResult(success: false, error: 'disconnected'));
+      }
     }
     _pendingRequests.clear();
   }
@@ -350,7 +384,11 @@ class HomeAssistantWsClient {
     _wantConnected = false;
     _reconnectTimer?.cancel();
     _teardown();
-    _setState(isConfigured ? HaConnectionState.disconnected : HaConnectionState.notConfigured);
+    _setState(
+      isConfigured
+          ? HaConnectionState.disconnected
+          : HaConnectionState.notConfigured,
+    );
   }
 
   void dispose() {

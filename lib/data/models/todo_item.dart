@@ -5,10 +5,12 @@ class TodoItem {
   final String? haUid; // Home Assistant's uid once the item exists there
   final String summary;
   final String? description;
-  final String category; // e.g. 'groceries', 'hardware', 'pharmacy', 'dairy', 'frozen'
+  final String
+  category; // e.g. 'groceries', 'hardware', 'pharmacy', 'dairy', 'frozen'
   final bool isPerishable; // Thermal tag: ice cream, frozen goods, dairy
   final String status; // 'needs_action' or 'completed'
-  final int humanOrderIndex; // Human-in-the-loop manual order (never overridden)
+  final int
+  humanOrderIndex; // Human-in-the-loop manual order (never overridden)
   final int? optimizedOrderIndex; // Visual overlay index suggested by solver
   final bool isPinned; // Hard lock sequence constraint
   final DateTime createdAt;

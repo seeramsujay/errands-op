@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/categories.dart';
 import '../../data/models/store_layout_edge.dart';
 import '../../state/app_state.dart';
@@ -40,20 +41,23 @@ class _StoresScreenState extends State<StoresScreen> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
-    if (_selectedStoreId != null && !state.stores.any((s) => s.id == _selectedStoreId)) {
+    if (_selectedStoreId != null &&
+        !state.stores.any((s) => s.id == _selectedStoreId)) {
       _selectedStoreId = null;
       _edges = [];
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Stores & Layout Learning', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Stores & Layout Learning',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'add_store',
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const StoreEditorScreen()),
-        ),
+        onPressed: () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const StoreEditorScreen())),
         icon: const Icon(Icons.add_business),
         label: const Text('Add Store'),
       ),
@@ -70,7 +74,11 @@ class _StoresScreenState extends State<StoresScreen> {
             ),
           const Text(
             'Candidate Stores & Time Windows',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 8),
 
@@ -90,28 +98,40 @@ class _StoresScreenState extends State<StoresScreen> {
                 ),
               ),
               child: ListTile(
-                title: Text(store.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                title: Text(
+                  store.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 2),
                     Text(
                       'Hours: ${store.formattedHours}  •  Wait: ${store.avgCheckoutDelaySec ~/ 60}m',
-                      style: const TextStyle(fontSize: 12, color: Colors.white70),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Wrap(
                       spacing: 4,
                       children: store.supportedCategories.map((c) {
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             ItemCategories.labelFor(c),
-                            style: const TextStyle(fontSize: 10, color: Colors.white54),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.white54,
+                            ),
                           ),
                         );
                       }).toList(),
@@ -119,10 +139,15 @@ class _StoresScreenState extends State<StoresScreen> {
                   ],
                 ),
                 trailing: IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: Color(0xFF818CF8)),
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    color: Color(0xFF818CF8),
+                  ),
                   tooltip: 'Edit store',
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => StoreEditorScreen(store: store)),
+                    MaterialPageRoute(
+                      builder: (_) => StoreEditorScreen(store: store),
+                    ),
                   ),
                 ),
                 onTap: () => _selectStore(store.id),
@@ -141,7 +166,11 @@ class _StoresScreenState extends State<StoresScreen> {
             children: [
               const Text(
                 'Learned In-Store Walk Graph (DAG)',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -151,7 +180,11 @@ class _StoresScreenState extends State<StoresScreen> {
                 ),
                 child: const Text(
                   'Kahn / FAS',
-                  style: TextStyle(fontSize: 10, color: Color(0xFF10B981), fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF10B981),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -182,7 +215,10 @@ class _StoresScreenState extends State<StoresScreen> {
             for (final edge in _edges) ...[
               Container(
                 margin: const EdgeInsets.only(bottom: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E293B),
                   borderRadius: BorderRadius.circular(10),
@@ -191,7 +227,10 @@ class _StoresScreenState extends State<StoresScreen> {
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF6366F1).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
@@ -206,10 +245,17 @@ class _StoresScreenState extends State<StoresScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward, size: 16, color: Colors.white38),
+                    const Icon(
+                      Icons.arrow_forward,
+                      size: 16,
+                      color: Colors.white38,
+                    ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF14B8A6).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
@@ -229,7 +275,11 @@ class _StoresScreenState extends State<StoresScreen> {
                       children: [
                         Text(
                           'Evidence: ${edge.forwardWeight.toStringAsFixed(2)}',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white70),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white70,
+                          ),
                         ),
                       ],
                     ),

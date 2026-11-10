@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+
 import '../core/constants.dart';
 import '../core/geohash.dart';
 import '../core/haversine.dart';
@@ -9,10 +11,7 @@ class MatrixResult {
   final List<List<double>> distances; // In meters
   final List<List<double>> durations; // In seconds
 
-  const MatrixResult({
-    required this.distances,
-    required this.durations,
-  });
+  const MatrixResult({required this.distances, required this.durations});
 }
 
 /// Geospatial Matrix Engine with Geohash Caching, 500m displacement checks,
@@ -112,23 +111,33 @@ class DistanceMatrixService {
     for (var i = 0; i < n; i++) {
       for (var j = 0; j < n; j++) {
         if (known[i][j]) continue;
-        distances[i][j] = HaversineUtils.roadDistance(nodes[i][0], nodes[i][1], nodes[j][0], nodes[j][1]);
-        durations[i][j] =
-            HaversineUtils.travelDurationSeconds(nodes[i][0], nodes[i][1], nodes[j][0], nodes[j][1]);
+        distances[i][j] = HaversineUtils.roadDistance(
+          nodes[i][0],
+          nodes[i][1],
+          nodes[j][0],
+          nodes[j][1],
+        );
+        durations[i][j] = HaversineUtils.travelDurationSeconds(
+          nodes[i][0],
+          nodes[i][1],
+          nodes[j][0],
+          nodes[j][1],
+        );
       }
     }
 
     return MatrixResult(distances: distances, durations: durations);
   }
 
-  Future<({List<List<double?>> distances, List<List<double?>> durations})?> _fetchExternalMatrix(
-    List<List<double>> nodes,
-  ) async {
+  Future<({List<List<double?>> distances, List<List<double?>> durations})?>
+  _fetchExternalMatrix(List<List<double>> nodes) async {
     final base = osrmEndpoint!.endsWith('/')
         ? osrmEndpoint!.substring(0, osrmEndpoint!.length - 1)
         : osrmEndpoint!;
     final coordStr = nodes.map((c) => '${c[1]},${c[0]}').join(';');
-    final url = Uri.parse('$base/table/v1/driving/$coordStr?annotations=distance,duration');
+    final url = Uri.parse(
+      '$base/table/v1/driving/$coordStr?annotations=distance,duration',
+    );
 
     final response = await _http.get(url).timeout(const Duration(seconds: 5));
     if (response.statusCode != 200) return null;
@@ -137,8 +146,13 @@ class DistanceMatrixService {
 
     // OSRM returns null for unreachable pairs.
     List<List<double?>> parse(Object? table) => (table as List)
-        .map((row) => (row as List).map((v) => (v as num?)?.toDouble()).toList())
+        .map(
+          (row) => (row as List).map((v) => (v as num?)?.toDouble()).toList(),
+        )
         .toList();
-    return (distances: parse(json['distances']), durations: parse(json['durations']));
+    return (
+      distances: parse(json['distances']),
+      durations: parse(json['durations']),
+    );
   }
 }

@@ -1,5 +1,7 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
+
 import '../../services/geofence_engine.dart';
 import '../../data/models/active_route.dart';
 import '../../data/models/store.dart';
@@ -133,14 +135,21 @@ class _MapPainter extends CustomPainter {
       final pos = toCanvas(store.latitude, store.longitude);
       final isCurrentStore = activeStore?.id == store.id;
       final innerPx = max(GeofenceEngine.innerRadius(store) * pxPerMeter, 10.0);
-      final outerPx = max(GeofenceEngine.outerRadius(store) * pxPerMeter, innerPx + 8);
+      final outerPx = max(
+        GeofenceEngine.outerRadius(store) * pxPerMeter,
+        innerPx + 8,
+      );
 
       // Outer Exit Boundary in amber
       final outerRingPaint = Paint()
-        ..color = (isCurrentStore ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8)).withValues(alpha: 0.12)
+        ..color =
+            (isCurrentStore ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8))
+                .withValues(alpha: 0.12)
         ..style = PaintingStyle.fill;
       final outerRingBorder = Paint()
-        ..color = (isCurrentStore ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8)).withValues(alpha: 0.35)
+        ..color =
+            (isCurrentStore ? const Color(0xFFF59E0B) : const Color(0xFF38BDF8))
+                .withValues(alpha: 0.35)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2;
       canvas.drawCircle(pos, outerPx, outerRingPaint);
@@ -148,10 +157,14 @@ class _MapPainter extends CustomPainter {
 
       // Inner Arrival Boundary in emerald
       final innerRingPaint = Paint()
-        ..color = (isCurrentStore ? const Color(0xFF10B981) : const Color(0xFF6EE7B7)).withValues(alpha: 0.2)
+        ..color =
+            (isCurrentStore ? const Color(0xFF10B981) : const Color(0xFF6EE7B7))
+                .withValues(alpha: 0.2)
         ..style = PaintingStyle.fill;
       final innerRingBorder = Paint()
-        ..color = (isCurrentStore ? const Color(0xFF10B981) : const Color(0xFF6EE7B7)).withValues(alpha: 0.6)
+        ..color =
+            (isCurrentStore ? const Color(0xFF10B981) : const Color(0xFF6EE7B7))
+                .withValues(alpha: 0.6)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5;
       canvas.drawCircle(pos, innerPx, innerRingPaint);
@@ -159,7 +172,9 @@ class _MapPainter extends CustomPainter {
 
       // Store Center Dot
       final storePinPaint = Paint()
-        ..color = isCurrentStore ? const Color(0xFF10B981) : const Color(0xFF38BDF8)
+        ..color = isCurrentStore
+            ? const Color(0xFF10B981)
+            : const Color(0xFF38BDF8)
         ..style = PaintingStyle.fill;
       canvas.drawCircle(pos, 6, storePinPaint);
 
@@ -176,11 +191,16 @@ class _MapPainter extends CustomPainter {
         text: textSpan,
         textDirection: TextDirection.ltr,
       )..layout();
-      textPainter.paint(canvas, Offset(pos.dx - textPainter.width / 2, pos.dy + 8));
+      textPainter.paint(
+        canvas,
+        Offset(pos.dx - textPainter.width / 2, pos.dy + 8),
+      );
 
       // Stop number overlay if in active route
       if (activeRoute != null) {
-        final stopIdx = activeRoute!.stops.indexWhere((s) => s.storeId == store.id);
+        final stopIdx = activeRoute!.stops.indexWhere(
+          (s) => s.storeId == store.id,
+        );
         if (stopIdx != -1) {
           final stopNumber = stopIdx + 1;
           final badgePaint = Paint()
@@ -203,7 +223,10 @@ class _MapPainter extends CustomPainter {
           )..layout();
           numPainter.paint(
             canvas,
-            Offset(badgePos.dx - numPainter.width / 2, badgePos.dy - numPainter.height / 2),
+            Offset(
+              badgePos.dx - numPainter.width / 2,
+              badgePos.dy - numPainter.height / 2,
+            ),
           );
         }
       }

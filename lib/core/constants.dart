@@ -5,7 +5,8 @@ class AppConstants {
   // ring is that radius scaled by this ratio (40m -> 80m by default).
   static const double innerArrivalRadiusMeters = 40.0;
   static const double outerExitRadiusMeters = 80.0;
-  static const double outerToInnerRadiusRatio = outerExitRadiusMeters / innerArrivalRadiusMeters;
+  static const double outerToInnerRadiusRatio =
+      outerExitRadiusMeters / innerArrivalRadiusMeters;
   static const int entryDwellTimeSeconds = 120;
   static const int exitGracePeriodSeconds = 180;
   static const double maxGpsHorizontalAccuracyMeters = 30.0;

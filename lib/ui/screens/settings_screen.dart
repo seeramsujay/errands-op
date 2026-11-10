@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../data/models/store.dart';
 import '../../data/sync/ha_websocket_client.dart';
 import '../../services/location_service.dart';
@@ -19,7 +20,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _homeLatController = TextEditingController();
   final _homeLonController = TextEditingController();
   final _routingController = TextEditingController();
-  final _remoteItemController = TextEditingController(text: 'Organic Unsalted Butter');
+  final _remoteItemController = TextEditingController(
+    text: 'Organic Unsalted Butter',
+  );
   String? _simStoreId;
   bool _loaded = false;
 
@@ -52,10 +55,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _toast(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
-  InputDecoration _field(String label, {String? hint, String? helper}) => InputDecoration(
+  InputDecoration _field(String label, {String? hint, String? helper}) =>
+      InputDecoration(
         labelText: label,
         hintText: hint,
         helperText: helper,
@@ -73,7 +78,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings & Simulation', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Settings & Simulation',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -105,7 +113,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Flexible(
                   child: Text(
                     'Home Assistant Integration',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
                 _buildHaBadge(state.haState),
@@ -117,9 +129,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'offline are queued and sent when the connection is back.',
               style: TextStyle(fontSize: 12, color: Colors.white54),
             ),
-            if (state.haState == HaConnectionState.error && state.haError != null) ...[
+            if (state.haState == HaConnectionState.error &&
+                state.haError != null) ...[
               const SizedBox(height: 8),
-              Text(state.haError!, style: const TextStyle(fontSize: 12, color: Color(0xFFF87171))),
+              Text(
+                state.haError!,
+                style: const TextStyle(fontSize: 12, color: Color(0xFFF87171)),
+              ),
             ],
             if (state.failedSyncCount > 0) ...[
               const SizedBox(height: 8),
@@ -144,7 +160,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: _field(
                 'Long-Lived Access Token',
                 hint: hasToken ? 'Saved - leave blank to keep it' : null,
-                helper: 'Create one in Home Assistant under Profile > Security.',
+                helper:
+                    'Create one in Home Assistant under Profile > Security.',
               ),
             ),
             const SizedBox(height: 8),
@@ -163,7 +180,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: () async {
                     if (_urlController.text.trim().isEmpty ||
                         (!hasToken && _tokenController.text.trim().isEmpty)) {
-                      _toast('Enter the Home Assistant URL and an access token.');
+                      _toast(
+                        'Enter the Home Assistant URL and an access token.',
+                      );
                       return;
                     }
                     await state.saveHaSettings(
@@ -208,7 +227,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             const Text(
               'Location',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -233,7 +256,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   case LocationStartResult.permissionDenied:
                     _toast('Location permission was denied.');
                   case LocationStartResult.unsupported:
-                    _toast('Live GPS is not available on this platform. Use the simulator below.');
+                    _toast(
+                      'Live GPS is not available on this platform. Use the simulator below.',
+                    );
                 }
               },
             ),
@@ -250,7 +275,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Expanded(
                   child: TextField(
                     controller: _homeLatController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
                     decoration: _field('Latitude'),
                   ),
                 ),
@@ -258,7 +286,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Expanded(
                   child: TextField(
                     controller: _homeLonController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
                     decoration: _field('Longitude'),
                   ),
                 ),
@@ -272,7 +303,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: () async {
                     final lat = double.tryParse(_homeLatController.text.trim());
                     final lon = double.tryParse(_homeLonController.text.trim());
-                    if (lat == null || lon == null || lat.abs() > 90 || lon.abs() > 180) {
+                    if (lat == null ||
+                        lon == null ||
+                        lat.abs() > 90 ||
+                        lon.abs() > 180) {
                       _toast('Enter a valid latitude and longitude.');
                       return;
                     }
@@ -285,8 +319,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   TextButton(
                     onPressed: () async {
                       await state.setHomeLocation(state.userLat, state.userLon);
-                      _homeLatController.text = state.homeLat.toStringAsFixed(6);
-                      _homeLonController.text = state.homeLon.toStringAsFixed(6);
+                      _homeLatController.text = state.homeLat.toStringAsFixed(
+                        6,
+                      );
+                      _homeLonController.text = state.homeLon.toStringAsFixed(
+                        6,
+                      );
                     },
                     child: const Text('Use current position'),
                   ),
@@ -308,7 +346,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             const Text(
               'Road Routing Server (optional)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 6),
             const Text(
@@ -320,7 +362,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextField(
               controller: _routingController,
               keyboardType: TextInputType.url,
-              decoration: _field('OSRM URL', hint: 'http://router.project-osrm.org'),
+              decoration: _field(
+                'OSRM URL',
+                hint: 'http://router.project-osrm.org',
+              ),
             ),
             const SizedBox(height: 8),
             OutlinedButton(
@@ -349,7 +394,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         const Text(
           'Interactive Simulation Sandbox',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 4),
         const Text(
@@ -366,7 +415,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: Row(
                     children: [
-                      const Text('Store:', style: TextStyle(color: Colors.white70)),
+                      const Text(
+                        'Store:',
+                        style: TextStyle(color: Colors.white70),
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: DropdownButton<String>(
@@ -374,7 +426,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           isExpanded: true,
                           dropdownColor: const Color(0xFF1E293B),
                           items: [
-                            for (final s in stores) DropdownMenuItem(value: s.id, child: Text(s.name)),
+                            for (final s in stores)
+                              DropdownMenuItem(
+                                value: s.id,
+                                child: Text(s.name),
+                              ),
                           ],
                           onChanged: (id) => setState(() => _simStoreId = id),
                         ),
@@ -386,8 +442,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 enabled: simStore != null,
                 leading: const Icon(Icons.drive_eta, color: Color(0xFF6366F1)),
                 title: const Text('Simulate GPS fix at the store'),
-                subtitle: const Text('Inside the arrival ring: starts the 120 s dwell timer'),
-                trailing: const Icon(Icons.play_arrow, color: Color(0xFF6366F1)),
+                subtitle: const Text(
+                  'Inside the arrival ring: starts the 120 s dwell timer',
+                ),
+                trailing: const Icon(
+                  Icons.play_arrow,
+                  color: Color(0xFF6366F1),
+                ),
                 onTap: () async {
                   await state.simulateDriveToStore(simStore!);
                   if (mounted) _toast('GPS fix placed at ${simStore!.name}.');
@@ -398,8 +459,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 enabled: simStore != null,
                 leading: const Icon(Icons.store, color: Color(0xFF10B981)),
                 title: const Text('Skip dwell: enter store now'),
-                subtitle: const Text('Transitions to INSIDE_STORE & starts In-Store Mode'),
-                trailing: const Icon(Icons.play_arrow, color: Color(0xFF10B981)),
+                subtitle: const Text(
+                  'Transitions to INSIDE_STORE & starts In-Store Mode',
+                ),
+                trailing: const Icon(
+                  Icons.play_arrow,
+                  color: Color(0xFF10B981),
+                ),
                 onTap: () async {
                   await state.simulateStoreEntry(simStore!);
                   if (mounted) _toast('Entered ${simStore!.name}.');
@@ -409,7 +475,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 leading: const Icon(Icons.exit_to_app, color: Colors.redAccent),
                 title: const Text('Leave store now'),
-                subtitle: const Text('Completes the visit & updates the learned aisle order'),
+                subtitle: const Text(
+                  'Completes the visit & updates the learned aisle order',
+                ),
                 trailing: const Icon(Icons.play_arrow, color: Colors.redAccent),
                 onTap: () async {
                   await state.simulateStoreExit();
@@ -425,10 +493,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.cloud_download, color: Color(0xFF06B6D4)),
+                leading: const Icon(
+                  Icons.cloud_download,
+                  color: Color(0xFF06B6D4),
+                ),
                 title: const Text('Simulate item added in Home Assistant'),
-                subtitle: const Text('Category & perishability are guessed from the text'),
-                trailing: const Icon(Icons.play_arrow, color: Color(0xFF06B6D4)),
+                subtitle: const Text(
+                  'Category & perishability are guessed from the text',
+                ),
+                trailing: const Icon(
+                  Icons.play_arrow,
+                  color: Color(0xFF06B6D4),
+                ),
                 onTap: () async {
                   final text = _remoteItemController.text.trim();
                   if (text.isEmpty) return;
@@ -440,7 +516,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 leading: const Icon(Icons.restart_alt, color: Colors.white60),
                 title: const Text('Reset Sample Database'),
-                subtitle: const Text('Restore default stores, items and DAG edges (keeps settings)'),
+                subtitle: const Text(
+                  'Restore default stores, items and DAG edges (keeps settings)',
+                ),
                 trailing: const Icon(Icons.refresh, color: Colors.white60),
                 onTap: () async {
                   final confirmed = await showDialog<bool>(
@@ -451,8 +529,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         'Items, stores, visits and everything learned will be replaced by the sample data.',
                       ),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                        TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Reset')),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Reset'),
+                        ),
                       ],
                     ),
                   );
@@ -472,11 +556,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final (Color color, String label) = switch (state) {
       HaConnectionState.connected => (const Color(0xFF10B981), 'Connected'),
       HaConnectionState.connecting || HaConnectionState.authenticating => (
-          const Color(0xFFF59E0B),
-          'Connecting'
-        ),
+        const Color(0xFFF59E0B),
+        'Connecting',
+      ),
       HaConnectionState.error => (const Color(0xFFF87171), 'Error'),
-      HaConnectionState.notConfigured => (const Color(0xFF94A3B8), 'Not set up'),
+      HaConnectionState.notConfigured => (
+        const Color(0xFF94A3B8),
+        'Not set up',
+      ),
       HaConnectionState.disconnected => (Colors.grey, 'Offline'),
     };
 
@@ -489,7 +576,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
