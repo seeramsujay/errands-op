@@ -1,5 +1,7 @@
 import 'dart:math';
+
 import 'package:uuid/uuid.dart';
+
 import '../core/constants.dart';
 import '../data/database/app_database.dart';
 import '../data/models/store_layout_edge.dart';
@@ -34,7 +36,10 @@ class LayoutLearningEngine {
   }
 
   /// Un-ticking an item in the store means it wasn't picked at that point.
-  Future<void> retractCheckoff({required String visitId, required String itemId}) {
+  Future<void> retractCheckoff({
+    required String visitId,
+    required String itemId,
+  }) {
     return database.deleteCheckoff(visitId, itemId);
   }
 
@@ -55,11 +60,13 @@ class LayoutLearningEngine {
       }
     }
     if (firstPick.length < 2) return;
-    final sequence = firstPick.entries.toList()..sort((a, b) => a.value.compareTo(b.value));
+    final sequence = firstPick.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
 
     final existingEdges = await database.getLayoutEdges(storeId);
     final edgeMap = <String, StoreLayoutEdge>{
-      for (final e in existingEdges) '${e.fromItemCategory}->${e.toItemCategory}': e
+      for (final e in existingEdges)
+        '${e.fromItemCategory}->${e.toItemCategory}': e,
     };
 
     // Pairwise time-decay weights: w = exp(-(t_B - t_A) / sigma)
@@ -68,7 +75,9 @@ class LayoutLearningEngine {
         final a = sequence[i];
         final b = sequence[j];
         final deltaSec = b.value.difference(a.value).inMilliseconds / 1000.0;
-        if (deltaSec <= 0 || deltaSec > AppConstants.walkOrderMaxDeltaSeconds) continue;
+        if (deltaSec <= 0 || deltaSec > AppConstants.walkOrderMaxDeltaSeconds) {
+          continue;
+        }
 
         final weight = exp(-deltaSec / AppConstants.walkOrderDecaySigma);
         final key = '${a.key}->${b.key}';
@@ -82,7 +91,9 @@ class LayoutLearningEngine {
                 sampleSize: 1,
               )
             : curr.copyWith(
-                forwardWeight: (curr.forwardWeight * curr.sampleSize + weight) / (curr.sampleSize + 1),
+                forwardWeight:
+                    (curr.forwardWeight * curr.sampleSize + weight) /
+                    (curr.sampleSize + 1),
                 sampleSize: curr.sampleSize + 1,
               );
       }
@@ -98,27 +109,32 @@ class LayoutLearningEngine {
   /// edges are dropped, then remaining longer cycles are broken.
   List<StoreLayoutEdge> deriveDag(List<StoreLayoutEdge> evidenceEdges) {
     final byKey = {
-      for (final e in evidenceEdges) '${e.fromItemCategory}->${e.toItemCategory}': e,
+      for (final e in evidenceEdges)
+        '${e.fromItemCategory}->${e.toItemCategory}': e,
     };
     final net = <StoreLayoutEdge>[];
     for (final e in evidenceEdges) {
       final reverse = byKey['${e.toItemCategory}->${e.fromItemCategory}'];
       final margin = e.evidence - (reverse?.evidence ?? 0.0);
       if (margin <= AppConstants.walkOrderConfidenceThreshold) continue;
-      net.add(StoreLayoutEdge(
-        storeId: e.storeId,
-        fromItemCategory: e.fromItemCategory,
-        toItemCategory: e.toItemCategory,
-        forwardWeight: margin,
-        sampleSize: 1,
-      ));
+      net.add(
+        StoreLayoutEdge(
+          storeId: e.storeId,
+          fromItemCategory: e.fromItemCategory,
+          toItemCategory: e.toItemCategory,
+          forwardWeight: margin,
+          sampleSize: 1,
+        ),
+      );
     }
     return breakCyclesWithFeedbackArcSet(net);
   }
 
   /// Eliminate directed cycles by greedily removing the edge with the least
   /// accumulated evidence on each cycle found.
-  List<StoreLayoutEdge> breakCyclesWithFeedbackArcSet(List<StoreLayoutEdge> edges) {
+  List<StoreLayoutEdge> breakCyclesWithFeedbackArcSet(
+    List<StoreLayoutEdge> edges,
+  ) {
     final retained = List<StoreLayoutEdge>.from(edges);
 
     while (true) {
@@ -204,7 +220,11 @@ class LayoutLearningEngine {
 
     final wanted = categoriesToPick.toSet();
     final edges = (await database.getLayoutEdges(storeId))
-        .where((e) => wanted.contains(e.fromItemCategory) && wanted.contains(e.toItemCategory))
+        .where(
+          (e) =>
+              wanted.contains(e.fromItemCategory) &&
+              wanted.contains(e.toItemCategory),
+        )
         .toList();
 
     return kahnsTopologicalSort(categoriesToPick, deriveDag(edges));
@@ -223,14 +243,16 @@ class LayoutLearningEngine {
     final adj = <String, List<String>>{for (final n in priority.keys) n: []};
 
     for (final e in edges) {
-      if (inDegree.containsKey(e.toItemCategory) && inDegree.containsKey(e.fromItemCategory)) {
+      if (inDegree.containsKey(e.toItemCategory) &&
+          inDegree.containsKey(e.fromItemCategory)) {
         adj[e.fromItemCategory]!.add(e.toItemCategory);
         inDegree[e.toItemCategory] = inDegree[e.toItemCategory]! + 1;
       }
     }
 
     int byPriority(String a, String b) => priority[a]!.compareTo(priority[b]!);
-    final ready = priority.keys.where((n) => inDegree[n] == 0).toList()..sort(byPriority);
+    final ready = priority.keys.where((n) => inDegree[n] == 0).toList()
+      ..sort(byPriority);
     final sorted = <String>[];
 
     while (ready.isNotEmpty) {

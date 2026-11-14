@@ -1,10 +1,17 @@
 import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+
 import '../core/kalman_filter.dart';
 
 /// Outcome of trying to start live location updates.
-enum LocationStartResult { started, serviceDisabled, permissionDenied, unsupported }
+enum LocationStartResult {
+  started,
+  serviceDisabled,
+  permissionDenied,
+  unsupported,
+}
 
 /// Thin wrapper over the platform location plugin that emits [GeoPoint]s.
 /// The geofence engine does its own accuracy gating and smoothing, so the
@@ -29,20 +36,23 @@ class LocationService {
         return LocationStartResult.permissionDenied;
       }
 
-      _subscription = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 5,
-        ),
-      ).listen(
-        (p) => onFix(GeoPoint(
-          latitude: p.latitude,
-          longitude: p.longitude,
-          accuracy: p.accuracy,
-          timestamp: p.timestamp,
-        )),
-        onError: (_) {},
-      );
+      _subscription =
+          Geolocator.getPositionStream(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              distanceFilter: 5,
+            ),
+          ).listen(
+            (p) => onFix(
+              GeoPoint(
+                latitude: p.latitude,
+                longitude: p.longitude,
+                accuracy: p.accuracy,
+                timestamp: p.timestamp,
+              ),
+            ),
+            onError: (_) {},
+          );
       return LocationStartResult.started;
     } on MissingPluginException {
       return LocationStartResult.unsupported; // e.g. Linux desktop

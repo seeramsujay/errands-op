@@ -1,4 +1,5 @@
 import 'dart:math';
+
 import 'constants.dart';
 
 /// Haversine spatial calculations with road network tortuosity adjustments
@@ -17,7 +18,8 @@ class HaversineUtils {
     final rLat1 = _toRadians(lat1);
     final rLat2 = _toRadians(lat2);
 
-    final a = sin(dLat / 2) * sin(dLat / 2) +
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
         cos(rLat1) * cos(rLat2) * sin(dLon / 2) * sin(dLon / 2);
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
 

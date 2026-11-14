@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/categories.dart';
 import '../../data/models/store.dart';
 import '../../state/app_state.dart';
@@ -18,7 +19,9 @@ class _InStoreScreenState extends State<InStoreScreen> {
 
   Future<void> _loadWalkOrder(Store store) async {
     _loadedForStoreId = store.id;
-    final items = await context.read<AppState>().getInStoreWalkOrderItems(store);
+    final items = await context.read<AppState>().getInStoreWalkOrderItems(
+      store,
+    );
     if (!mounted) return;
     setState(() => _walkOrder = items.map((i) => i.id).toList());
   }
@@ -66,7 +69,10 @@ class _InStoreScreenState extends State<InStoreScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(store.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(
+              store.name,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const Text(
               'Aisle Walk-Order Active (Learned DAG)',
               style: TextStyle(fontSize: 11, color: Color(0xFF10B981)),
@@ -80,8 +86,15 @@ class _InStoreScreenState extends State<InStoreScreen> {
               if (!context.mounted) return;
               Navigator.pop(context);
             },
-            icon: const Icon(Icons.exit_to_app, color: Colors.redAccent, size: 18),
-            label: const Text('Exit Store', style: TextStyle(color: Colors.redAccent)),
+            icon: const Icon(
+              Icons.exit_to_app,
+              color: Colors.redAccent,
+              size: 18,
+            ),
+            label: const Text(
+              'Exit Store',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
@@ -91,7 +104,10 @@ class _InStoreScreenState extends State<InStoreScreen> {
               children: [
                 // Shopping progress bar
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   color: const Color(0xFF1E293B),
                   child: Column(
                     children: [
@@ -100,7 +116,10 @@ class _InStoreScreenState extends State<InStoreScreen> {
                         children: [
                           Text(
                             'Shopping Progress: $completedCount of $totalCount items',
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           Text(
                             '${(progress * 100).toInt()}%',
@@ -119,7 +138,9 @@ class _InStoreScreenState extends State<InStoreScreen> {
                           value: progress,
                           minHeight: 8,
                           backgroundColor: const Color(0xFF334155),
-                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF14B8A6)),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFF14B8A6),
+                          ),
                         ),
                       ),
                     ],
@@ -129,7 +150,10 @@ class _InStoreScreenState extends State<InStoreScreen> {
                 // Walk Order Info Banner
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   color: const Color(0xFF0F172A),
                   child: const Row(
                     children: [
@@ -163,37 +187,58 @@ class _InStoreScreenState extends State<InStoreScreen> {
 
                             return Card(
                               margin: const EdgeInsets.symmetric(vertical: 5),
-                              color: isDone ? const Color(0xFF111827) : const Color(0xFF1E293B),
+                              color: isDone
+                                  ? const Color(0xFF111827)
+                                  : const Color(0xFF1E293B),
                               child: ListTile(
                                 leading: Checkbox(
                                   value: isDone,
                                   activeColor: const Color(0xFF14B8A6),
-                                  onChanged: (_) => state.toggleItemCompleted(item.id),
+                                  onChanged: (_) =>
+                                      state.toggleItemCompleted(item.id),
                                 ),
                                 title: Text(
                                   item.summary,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
-                                    decoration: isDone ? TextDecoration.lineThrough : null,
-                                    color: isDone ? Colors.white38 : Colors.white,
+                                    decoration: isDone
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                    color: isDone
+                                        ? Colors.white38
+                                        : Colors.white,
                                   ),
                                 ),
                                 subtitle: Row(
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.06),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.06,
+                                        ),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
                                         ItemCategories.labelFor(item.category),
-                                        style: const TextStyle(fontSize: 10, color: Colors.white70),
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.white70,
+                                        ),
                                       ),
                                     ),
                                     if (item.isPerishable) ...[
                                       const SizedBox(width: 6),
-                                      const Text('🧊 Perishable', style: TextStyle(fontSize: 11, color: Color(0xFF67E8F9))),
+                                      const Text(
+                                        '🧊 Perishable',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFF67E8F9),
+                                        ),
+                                      ),
                                     ],
                                   ],
                                 ),

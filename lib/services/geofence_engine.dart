@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:uuid/uuid.dart';
+
 import '../core/constants.dart';
 import '../core/haversine.dart';
 import '../core/kalman_filter.dart';
@@ -8,12 +10,7 @@ import '../data/models/store.dart';
 import '../data/models/visit.dart';
 import 'layout_learning_engine.dart';
 
-enum GeofenceState {
-  outsideStore,
-  pendingEntry,
-  insideStore,
-  pendingExit,
-}
+enum GeofenceState { outsideStore, pendingEntry, insideStore, pendingExit }
 
 /// Dual-Ring Hysteresis Geofencing State Machine
 ///
@@ -45,8 +42,8 @@ class GeofenceEngine {
     KalmanGpsFilter? filter,
     DateTime Function()? clock,
     this.autoTick = true,
-  })  : kalmanFilter = filter ?? KalmanGpsFilter(),
-        clock = clock ?? DateTime.now;
+  }) : kalmanFilter = filter ?? KalmanGpsFilter(),
+       clock = clock ?? DateTime.now;
 
   GeofenceState get currentState => _currentState;
   Store? get activeStore => _activeStore;
@@ -55,7 +52,8 @@ class GeofenceEngine {
   Stream<int> get dwellProgressStream => _dwellSecondsController.stream;
 
   static double innerRadius(Store s) => s.geofenceRadiusMeters;
-  static double outerRadius(Store s) => s.geofenceRadiusMeters * AppConstants.outerToInnerRadiusRatio;
+  static double outerRadius(Store s) =>
+      s.geofenceRadiusMeters * AppConstants.outerToInnerRadiusRatio;
 
   void _setState(GeofenceState newState) {
     _currentState = newState;
@@ -67,13 +65,19 @@ class GeofenceEngine {
   }
 
   /// Resume (or close) a visit left open when the app was last stopped.
-  Future<void> restoreActiveVisit({Duration maxAge = const Duration(hours: 3)}) async {
+  Future<void> restoreActiveVisit({
+    Duration maxAge = const Duration(hours: 3),
+  }) async {
     final visit = await database.getActiveVisit();
     if (visit == null) return;
     final store = await database.getStore(visit.storeId);
     final now = clock();
     if (store == null || now.difference(visit.entryTimestamp) > maxAge) {
-      await _finishVisit(visit, store?.id, exitAt: visit.entryTimestamp.add(const Duration(minutes: 30)));
+      await _finishVisit(
+        visit,
+        store?.id,
+        exitAt: visit.entryTimestamp.add(const Duration(minutes: 30)),
+      );
       return;
     }
     _activeStore = store;
@@ -91,11 +95,11 @@ class GeofenceEngine {
     final t = rawPoint.timestamp;
 
     double distanceTo(Store s) => HaversineUtils.directDistance(
-          smoothed.latitude,
-          smoothed.longitude,
-          s.latitude,
-          s.longitude,
-        );
+      smoothed.latitude,
+      smoothed.longitude,
+      s.latitude,
+      s.longitude,
+    );
 
     switch (_currentState) {
       case GeofenceState.outsideStore:
@@ -130,7 +134,10 @@ class GeofenceEngine {
     }
   }
 
-  Future<void> _maybeStartEntry(double Function(Store) distanceTo, DateTime t) async {
+  Future<void> _maybeStartEntry(
+    double Function(Store) distanceTo,
+    DateTime t,
+  ) async {
     final stores = await database.getStores();
     Store? nearest;
     var nearestDistance = double.infinity;
@@ -171,7 +178,10 @@ class GeofenceEngine {
     _pendingSince = since;
     _setState(state);
     if (autoTick) {
-      _ticker = Timer.periodic(const Duration(seconds: 1), (_) => tick(clock()));
+      _ticker = Timer.periodic(
+        const Duration(seconds: 1),
+        (_) => tick(clock()),
+      );
     }
   }
 
@@ -214,11 +224,18 @@ class GeofenceEngine {
     _setState(GeofenceState.outsideStore);
   }
 
-  Future<void> _finishVisit(StoreVisit visit, String? storeId, {required DateTime exitAt}) async {
+  Future<void> _finishVisit(
+    StoreVisit visit,
+    String? storeId, {
+    required DateTime exitAt,
+  }) async {
     await database.updateVisit(visit.copyWith(exitTimestamp: exitAt));
     // Trigger walk-order graph layout learning on store exit
     if (layoutLearningEngine != null && storeId != null) {
-      await layoutLearningEngine!.processCompletedVisit(storeId: storeId, visitId: visit.id);
+      await layoutLearningEngine!.processCompletedVisit(
+        storeId: storeId,
+        visitId: visit.id,
+      );
     }
   }
 

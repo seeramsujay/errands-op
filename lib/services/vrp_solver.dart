@@ -1,6 +1,8 @@
 import 'dart:isolate';
 import 'dart:math';
+
 import 'package:uuid/uuid.dart';
+
 import '../core/constants.dart';
 import '../core/haversine.dart';
 import '../data/models/active_route.dart';
@@ -34,8 +36,10 @@ class VrpSolverRequest {
 /// Solver status values stored on [ActiveRoute.solverStatus].
 class SolverStatus {
   static const optimal = 'OPTIMAL'; // exact DP, all hard constraints met
-  static const feasible = 'FEASIBLE'; // heuristic (large list), all constraints met
-  static const relaxed = 'RELAXED_CONSTRAINTS'; // time windows had to be softened
+  static const feasible =
+      'FEASIBLE'; // heuristic (large list), all constraints met
+  static const relaxed =
+      'RELAXED_CONSTRAINTS'; // time windows had to be softened
   static const infeasible = 'INFEASIBLE';
 }
 
@@ -64,7 +68,10 @@ class VrpSolver {
       return _emptyRoute(SolverStatus.optimal, 'No pending items to route.');
     }
     if (request.candidateStores.isEmpty) {
-      return _emptyRoute(SolverStatus.infeasible, 'No stores configured. Add stores to plan a route.');
+      return _emptyRoute(
+        SolverStatus.infeasible,
+        'No stores configured. Add stores to plan a route.',
+      );
     }
 
     final problem = _buildProblem(request, activeItems);
@@ -97,9 +104,11 @@ class VrpSolver {
   _Problem _buildProblem(VrpSolverRequest request, List<TodoItem> items) {
     final warnings = <String>[];
     final prefs = {
-      for (final p in request.preferences) '${p.itemCategory}|${p.storeId}': p.confidenceScore,
+      for (final p in request.preferences)
+        '${p.itemCategory}|${p.storeId}': p.confidenceScore,
     };
-    double conf(String category, String storeId) => prefs['$category|$storeId'] ?? 0.5;
+    double conf(String category, String storeId) =>
+        prefs['$category|$storeId'] ?? 0.5;
 
     // 1. Group items into tasks. Pinned items are their own task; unpinned
     // items are grouped by (category, perishable) within the stretch of the
@@ -134,8 +143,11 @@ class VrpSolver {
     for (final itemsOfTask in taskItems) {
       final category = itemsOfTask.first.category;
       var candidates = allStores
-          .where((s) =>
-              s.supportedCategories.contains(category) || s.supportedCategories.contains('generic'))
+          .where(
+            (s) =>
+                s.supportedCategories.contains(category) ||
+                s.supportedCategories.contains('generic'),
+          )
           .toList();
       if (candidates.isEmpty) {
         missingCategories.add(category);
@@ -144,19 +156,31 @@ class VrpSolver {
       // Strongly learned favourites knock out stores the user never uses for this category.
       final best = candidates.map((s) => conf(category, s.id)).reduce(max);
       candidates = candidates
-          .where((s) => conf(category, s.id) >= best - AppConstants.storePreferenceCutoffMargin)
+          .where(
+            (s) =>
+                conf(category, s.id) >=
+                best - AppConstants.storePreferenceCutoffMargin,
+          )
           .toList();
       // Keep the search tractable: the few best candidates by preference, then proximity.
-      double distFromOrigin(Store s) =>
-          HaversineUtils.directDistance(origin[0], origin[1], s.latitude, s.longitude);
+      double distFromOrigin(Store s) => HaversineUtils.directDistance(
+        origin[0],
+        origin[1],
+        s.latitude,
+        s.longitude,
+      );
       candidates.sort((a, b) {
         final byPref = conf(category, b.id).compareTo(conf(category, a.id));
-        return byPref != 0 ? byPref : distFromOrigin(a).compareTo(distFromOrigin(b));
+        return byPref != 0
+            ? byPref
+            : distFromOrigin(a).compareTo(distFromOrigin(b));
       });
       taskCandidates.add(candidates.take(_maxCandidatesPerTask).toList());
     }
     for (final c in missingCategories) {
-      warnings.add('No store is set up for "$c" items, so any store may be suggested for them.');
+      warnings.add(
+        'No store is set up for "$c" items, so any store may be suggested for them.',
+      );
     }
 
     final stores = <Store>[];
@@ -176,24 +200,30 @@ class VrpSolver {
       // Pins that sit above this task must be served no later than it.
       var requiredBefore = 0;
       for (var p = 0; p < t; p++) {
-        if (taskPinned[p] && taskItems[p].first.humanOrderIndex < first.humanOrderIndex) {
+        if (taskPinned[p] &&
+            taskItems[p].first.humanOrderIndex < first.humanOrderIndex) {
           requiredBefore |= 1 << p;
         }
       }
-      tasks.add(_Task(
-        items: taskItems[t],
-        category: first.category,
-        perishableCount: taskItems[t].where((i) => i.isPerishable).length,
-        isPinned: taskPinned[t],
-        requiredBefore: requiredBefore,
-        candidateStores: taskCandidates[t].map((s) => storeIndex[s.id]!).toList(),
-      ));
+      tasks.add(
+        _Task(
+          items: taskItems[t],
+          category: first.category,
+          perishableCount: taskItems[t].where((i) => i.isPerishable).length,
+          isPinned: taskPinned[t],
+          requiredBefore: requiredBefore,
+          candidateStores: taskCandidates[t]
+              .map((s) => storeIndex[s.id]!)
+              .toList(),
+        ),
+      );
     }
 
     final preferenceCost = List.generate(stores.length, (s) {
       return [
         for (final task in tasks)
-          AppConstants.storePreferenceWeightSeconds * (1.0 - conf(task.category, stores[s].id)),
+          AppConstants.storePreferenceWeightSeconds *
+              (1.0 - conf(task.category, stores[s].id)),
       ];
     });
 
@@ -207,7 +237,11 @@ class VrpSolver {
     );
   }
 
-  ActiveRoute _assembleRoute(_Problem problem, MatrixResult matrix, _Plan plan) {
+  ActiveRoute _assembleRoute(
+    _Problem problem,
+    MatrixResult matrix,
+    _Plan plan,
+  ) {
     final routeId = const Uuid().v4();
     final warnings = [...problem.warnings];
     final stops = <RouteStop>[];
@@ -215,7 +249,10 @@ class VrpSolver {
     var prevNode = 0;
 
     if (plan.steps.isEmpty) {
-      return _emptyRoute(SolverStatus.infeasible, 'Could not build a route for the pending items.');
+      return _emptyRoute(
+        SolverStatus.infeasible,
+        'Could not build a route for the pending items.',
+      );
     }
 
     String hhmm(DateTime t) =>
@@ -244,24 +281,27 @@ class VrpSolver {
             : '${store.name} closes at ${hhmm(window.close)}; arriving ${hhmm(arrival)} leaves too little time. Hours: ${store.formattedHours}';
         warnings.add(message);
       } else if (step.wait >= 300) {
-        message = 'Arrive ${hhmm(arrival)}, opens ${hhmm(start)} (${(step.wait / 60).round()} min wait).';
+        message =
+            'Arrive ${hhmm(arrival)}, opens ${hhmm(start)} (${(step.wait / 60).round()} min wait).';
       }
 
-      stops.add(RouteStop(
-        id: const Uuid().v4(),
-        routeId: routeId,
-        stopSequence: i + 1,
-        storeId: store.id,
-        estimatedArrival: arrival,
-        estimatedDeparture: departure,
-        store: store,
-        itemsToPick: stopItems,
-        hasPerishable: stopItems.any((it) => it.isPerishable),
-        isUserPinned: stopItems.any((it) => it.isPinned),
-        violatesClosingTime: step.late,
-        waitSeconds: step.wait.round(),
-        warningMessage: message,
-      ));
+      stops.add(
+        RouteStop(
+          id: const Uuid().v4(),
+          routeId: routeId,
+          stopSequence: i + 1,
+          storeId: store.id,
+          estimatedArrival: arrival,
+          estimatedDeparture: departure,
+          store: store,
+          itemsToPick: stopItems,
+          hasPerishable: stopItems.any((it) => it.isPerishable),
+          isUserPinned: stopItems.any((it) => it.isPinned),
+          violatesClosingTime: step.late,
+          waitSeconds: step.wait.round(),
+          warningMessage: message,
+        ),
+      );
     }
 
     var totalDuration = plan.steps.last.departureTime;
@@ -270,7 +310,9 @@ class VrpSolver {
       totalDuration += matrix.durations[prevNode][0];
     }
     if (plan.relaxed && problem.tasks.any((t) => t.isPinned)) {
-      warnings.add('Your pinned order was kept even though it misses some opening hours.');
+      warnings.add(
+        'Your pinned order was kept even though it misses some opening hours.',
+      );
     }
 
     return ActiveRoute(
@@ -290,7 +332,8 @@ class VrpSolver {
 const int _maxCandidatesPerTask = 4;
 const int _maxLabelsPerState = 4;
 
-Duration _secs(double seconds) => Duration(milliseconds: (seconds * 1000).round());
+Duration _secs(double seconds) =>
+    Duration(milliseconds: (seconds * 1000).round());
 
 class _Task {
   final List<TodoItem> items;
@@ -368,11 +411,19 @@ _Plan _solvePlan(_Problem problem, MatrixResult matrix) {
   if (problem.tasks.length <= AppConstants.exactSolverMaxTasks) {
     final hard = search.exact(relaxed: false);
     if (hard != null) return _Plan(hard, relaxed: false, exact: true);
-    return _Plan(search.exact(relaxed: true) ?? const [], relaxed: true, exact: true);
+    return _Plan(
+      search.exact(relaxed: true) ?? const [],
+      relaxed: true,
+      exact: true,
+    );
   }
   final hard = search.greedy(relaxed: false);
   if (hard != null) return _Plan(hard, relaxed: false, exact: false);
-  return _Plan(search.greedy(relaxed: true) ?? const [], relaxed: true, exact: false);
+  return _Plan(
+    search.greedy(relaxed: true) ?? const [],
+    relaxed: true,
+    exact: false,
+  );
 }
 
 class _Search {
@@ -413,7 +464,8 @@ class _Search {
     while (true) {
       var next = t;
       for (var i = 0; i < p.tasks.length; i++) {
-        if (next & (1 << i) != 0 && p.tasks[i].requiredBefore & ~(mask | next) != 0) {
+        if (next & (1 << i) != 0 &&
+            p.tasks[i].requiredBefore & ~(mask | next) != 0) {
           next &= ~(1 << i);
         }
       }
@@ -429,10 +481,7 @@ class _Search {
     if (open == 0) return const [];
     final all = _respectPins(open, mask);
     final dry = _respectPins(open & ~perishableMask, mask);
-    return [
-      if (all != 0) all,
-      if (dry != 0 && dry != all) dry,
-    ];
+    return [if (all != 0) all, if (dry != 0 && dry != all) dry];
   }
 
   _Label? _extend(_Label from, int mask, int s, int covered, bool relaxed) {
@@ -452,7 +501,8 @@ class _Search {
     } else {
       final start = arrivalAbs.isBefore(window.open) ? window.open : arrivalAbs;
       wait = start.difference(arrivalAbs).inMilliseconds / 1000.0;
-      overrun = start.difference(window.close).inMilliseconds / 1000.0 + service;
+      overrun =
+          start.difference(window.close).inMilliseconds / 1000.0 + service;
       late = overrun > 0;
     }
     if (late) {
@@ -461,14 +511,19 @@ class _Search {
     }
 
     final elapsed = travel + wait + service;
-    var cost = from.cost +
+    var cost =
+        from.cost +
         elapsed +
         AppConstants.earlyArrivalWaitPenaltyBeta * wait +
-        AppConstants.thermalDecayPenaltyGamma * _perishablesOnBoard(mask) * elapsed;
+        AppConstants.thermalDecayPenaltyGamma *
+            _perishablesOnBoard(mask) *
+            elapsed;
     for (var t = 0; t < p.tasks.length; t++) {
       if (covered & (1 << t) != 0) cost += p.preferenceCost[s][t];
     }
-    if (late) cost += AppConstants.lateArrivalPenaltyPerSecond * max(overrun, 60.0);
+    if (late) {
+      cost += AppConstants.lateArrivalPenaltyPerSecond * max(overrun, 60.0);
+    }
 
     return _Label(
       parent: from,
@@ -487,26 +542,30 @@ class _Search {
     final travel = m.durations[label.store + 1][0];
     return label.cost +
         travel +
-        AppConstants.thermalDecayPenaltyGamma * _perishablesOnBoard(fullMask) * travel;
+        AppConstants.thermalDecayPenaltyGamma *
+            _perishablesOnBoard(fullMask) *
+            travel;
   }
 
   _Label get _start => const _Label(
-        parent: null,
-        store: -1,
-        covered: 0,
-        arrival: 0,
-        wait: 0,
-        departureTime: 0,
-        cost: 0,
-        late: false,
-      );
+    parent: null,
+    store: -1,
+    covered: 0,
+    arrival: 0,
+    wait: 0,
+    departureTime: 0,
+    cost: 0,
+    late: false,
+  );
 
   /// Label-setting DP over (covered-task mask, last store) with Pareto
   /// pruning on (time, cost). Masks only grow, so ascending order is a
   /// valid topological order of the state graph.
   List<_Label>? exact({required bool relaxed}) {
     final labels = List<Map<int, List<_Label>>?>.filled(fullMask + 1, null);
-    labels[0] = {-1: [_start]};
+    labels[0] = {
+      -1: [_start],
+    };
 
     for (var mask = 0; mask < fullMask; mask++) {
       final byStore = labels[mask];
@@ -545,9 +604,14 @@ class _Search {
   void _insertPareto(List<_Label> bucket, _Label next) {
     const eps = 1e-6;
     for (final l in bucket) {
-      if (l.departureTime <= next.departureTime + eps && l.cost <= next.cost + eps) return;
+      if (l.departureTime <= next.departureTime + eps &&
+          l.cost <= next.cost + eps) {
+        return;
+      }
     }
-    bucket.removeWhere((l) => next.departureTime <= l.departureTime && next.cost <= l.cost);
+    bucket.removeWhere(
+      (l) => next.departureTime <= l.departureTime && next.cost <= l.cost,
+    );
     bucket.add(next);
     if (bucket.length > _maxLabelsPerState) {
       bucket.sort((a, b) => a.cost.compareTo(b.cost));

@@ -2,7 +2,8 @@
 class MutationRecord {
   final String id;
   final String itemId;
-  final String field; // e.g. 'status', 'summary', 'human_order_index', 'is_pinned'
+  final String
+  field; // e.g. 'status', 'summary', 'human_order_index', 'is_pinned'
   final String? value;
   final String hlcTimestamp; // Monotonic HLC timestamp
   final String status; // 'pending', 'synced', 'failed'

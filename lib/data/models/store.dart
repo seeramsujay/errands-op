@@ -7,7 +7,8 @@ class Store {
   final double longitude;
   final double geofenceRadiusMeters;
   final int? openingTimeSec; // Seconds from 00:00 (e.g. 9*3600 = 32400 for 9am)
-  final int? closingTimeSec; // Seconds from 00:00 (e.g. 21*3600 = 75600 for 9pm)
+  final int?
+  closingTimeSec; // Seconds from 00:00 (e.g. 21*3600 = 75600 for 9pm)
   final int avgCheckoutDelaySec; // Estimated in-store shopping/wait duration (default 600s = 10m)
   final List<String> supportedCategories;
 
@@ -25,7 +26,9 @@ class Store {
   });
 
   bool get isAlwaysOpen =>
-      openingTimeSec == null || closingTimeSec == null || openingTimeSec == closingTimeSec;
+      openingTimeSec == null ||
+      closingTimeSec == null ||
+      openingTimeSec == closingTimeSec;
 
   /// The opening period that contains [time], or failing that the next one
   /// that starts later on the same calendar day. Handles stores that close
@@ -38,7 +41,9 @@ class Store {
     final overnight = closingTimeSec! < openingTimeSec!;
     ({DateTime open, DateTime close}) windowFor(int dayOffset) {
       final day = DateTime(time.year, time.month, time.day + dayOffset);
-      final closeDay = overnight ? DateTime(day.year, day.month, day.day + 1) : day;
+      final closeDay = overnight
+          ? DateTime(day.year, day.month, day.day + 1)
+          : day;
       return (
         open: day.add(Duration(seconds: openingTimeSec!)),
         close: closeDay.add(Duration(seconds: closingTimeSec!)),
@@ -124,7 +129,8 @@ class Store {
       brand: map['brand'] as String?,
       latitude: (map['latitude'] as num).toDouble(),
       longitude: (map['longitude'] as num).toDouble(),
-      geofenceRadiusMeters: (map['geofence_radius_meters'] as num? ?? 50.0).toDouble(),
+      geofenceRadiusMeters: (map['geofence_radius_meters'] as num? ?? 50.0)
+          .toDouble(),
       openingTimeSec: map['opening_time_sec'] as int?,
       closingTimeSec: map['closing_time_sec'] as int?,
       avgCheckoutDelaySec: map['avg_checkout_delay_sec'] as int? ?? 600,

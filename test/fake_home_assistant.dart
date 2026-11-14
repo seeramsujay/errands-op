@@ -15,7 +15,10 @@ class FakeHomeAssistant {
   late HttpServer _server;
   int _nextUid = 1;
 
-  FakeHomeAssistant({this.token = 'good-token', this.entityId = 'todo.shopping_list'});
+  FakeHomeAssistant({
+    this.token = 'good-token',
+    this.entityId = 'todo.shopping_list',
+  });
 
   String get url => 'http://127.0.0.1:${_server.port}';
   int get connectionCount => _sockets.length;
@@ -82,7 +85,8 @@ class FakeHomeAssistant {
       'type': 'result',
       'success': success,
       'result': null,
-      if (error != null) 'error': {'code': 'service_validation_error', 'message': error},
+      if (error != null)
+        'error': {'code': 'service_validation_error', 'message': error},
     });
   }
 
@@ -91,7 +95,9 @@ class FakeHomeAssistant {
       _send(ws, {
         'id': id,
         'type': 'event',
-        'event': {'items': items.map((i) => Map<String, dynamic>.from(i)).toList()},
+        'event': {
+          'items': items.map((i) => Map<String, dynamic>.from(i)).toList(),
+        },
       });
     });
   }
@@ -103,7 +109,10 @@ class FakeHomeAssistant {
         if (msg['access_token'] == token) {
           _send(ws, {'type': 'auth_ok', 'ha_version': '2026.10.0'});
         } else {
-          _send(ws, {'type': 'auth_invalid', 'message': 'Invalid access token or password'});
+          _send(ws, {
+            'type': 'auth_invalid',
+            'message': 'Invalid access token or password',
+          });
           ws.close();
         }
       case 'ping':
@@ -121,16 +130,32 @@ class FakeHomeAssistant {
         final data = Map<String, dynamic>.from(msg['service_data'] as Map);
         switch (msg['service']) {
           case 'add_item':
-            items.add({'uid': 'uid-${_nextUid++}', 'summary': data['item'], 'status': 'needs_action'});
+            items.add({
+              'uid': 'uid-${_nextUid++}',
+              'summary': data['item'],
+              'status': 'needs_action',
+            });
           case 'update_item':
-            final match = items.where((i) => i['uid'] == data['item'] || i['summary'] == data['item']);
+            final match = items.where(
+              (i) => i['uid'] == data['item'] || i['summary'] == data['item'],
+            );
             if (match.isEmpty) {
-              _result(ws, id!, success: false, error: 'Unable to find to-do list item');
+              _result(
+                ws,
+                id!,
+                success: false,
+                error: 'Unable to find to-do list item',
+              );
               return;
             }
             if (data.containsKey('description')) {
               // Like the built-in shopping list, which has no descriptions.
-              _result(ws, id!, success: false, error: 'Entity does not support setting field: description');
+              _result(
+                ws,
+                id!,
+                success: false,
+                error: 'Entity does not support setting field: description',
+              );
               return;
             }
             final item = match.first;

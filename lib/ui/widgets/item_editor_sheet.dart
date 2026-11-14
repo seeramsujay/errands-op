@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/categories.dart';
 import '../../data/models/todo_item.dart';
 
@@ -19,7 +20,10 @@ class ItemDraft {
 
 /// Bottom sheet for adding a new item or editing [existing]. Until the user
 /// picks a category by hand, it is guessed from the title as they type.
-Future<ItemDraft?> showItemEditorSheet(BuildContext context, {TodoItem? existing}) {
+Future<ItemDraft?> showItemEditorSheet(
+  BuildContext context, {
+  TodoItem? existing,
+}) {
   return showModalBottomSheet<ItemDraft>(
     context: context,
     isScrollControlled: true,
@@ -95,7 +99,8 @@ class _ItemEditorState extends State<_ItemEditor> {
     final isEdit = widget.existing != null;
     final categories = [
       ...ItemCategories.all,
-      if (!ItemCategories.isKnown(_category)) ItemCategory(_category, _category),
+      if (!ItemCategories.isKnown(_category))
+        ItemCategory(_category, _category),
     ];
 
     return Padding(
@@ -111,7 +116,11 @@ class _ItemEditorState extends State<_ItemEditor> {
         children: [
           Text(
             isEdit ? 'Edit Item' : 'Add Errand / Item',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -124,7 +133,9 @@ class _ItemEditorState extends State<_ItemEditor> {
               hintStyle: TextStyle(color: Colors.white38),
               filled: true,
               fillColor: Color(0xFF1E293B),
-              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10)),
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -135,7 +146,9 @@ class _ItemEditorState extends State<_ItemEditor> {
               hintStyle: TextStyle(color: Colors.white38),
               filled: true,
               fillColor: Color(0xFF1E293B),
-              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10)),
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -149,7 +162,8 @@ class _ItemEditorState extends State<_ItemEditor> {
                   isExpanded: true,
                   dropdownColor: const Color(0xFF1E293B),
                   items: [
-                    for (final c in categories) DropdownMenuItem(value: c.id, child: Text(c.label)),
+                    for (final c in categories)
+                      DropdownMenuItem(value: c.id, child: Text(c.label)),
                   ],
                   onChanged: (val) {
                     if (val == null) return;
@@ -157,7 +171,9 @@ class _ItemEditorState extends State<_ItemEditor> {
                       _category = val;
                       _categoryChosen = true;
                       if (!_perishableChosen) {
-                        _perishable = categories.firstWhere((c) => c.id == val).perishableByDefault;
+                        _perishable = categories
+                            .firstWhere((c) => c.id == val)
+                            .perishableByDefault;
                       }
                     });
                   },
@@ -166,7 +182,10 @@ class _ItemEditorState extends State<_ItemEditor> {
               if (!_categoryChosen && _title.text.trim().isNotEmpty)
                 const Padding(
                   padding: EdgeInsets.only(left: 6),
-                  child: Text('auto', style: TextStyle(fontSize: 11, color: Color(0xFF818CF8))),
+                  child: Text(
+                    'auto',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF818CF8)),
+                  ),
                 ),
             ],
           ),

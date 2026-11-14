@@ -21,45 +21,165 @@ class ItemCategories {
   // Order matters for classification: earlier categories win ties, so the
   // more specific ones (frozen before dairy, e.g. "ice cream") come first.
   static const List<ItemCategory> all = [
-    ItemCategory('frozen', 'Frozen Foods', perishableByDefault: true, keywords: [
-      'ice cream', 'gelato', 'frozen', 'popsicle', 'ice', 'kulfi', 'sorbet',
-      'peas frozen', 'fries',
-    ]),
-    ItemCategory('dairy', 'Dairy', perishableByDefault: true, keywords: [
-      'milk', 'yogurt', 'yoghurt', 'curd', 'cheese', 'butter', 'paneer',
-      'cream', 'ghee', 'dahi', 'buttermilk',
-    ]),
-    ItemCategory('produce', 'Fresh Produce', keywords: [
-      'apple', 'banana', 'tomato', 'onion', 'potato', 'spinach', 'lettuce',
-      'carrot', 'fruit', 'vegetable', 'veggies', 'lemon', 'garlic', 'ginger',
-      'coriander', 'mango', 'grapes', 'cucumber',
-    ]),
-    ItemCategory('bakery', 'Bakery', keywords: [
-      'bread', 'bun', 'cake', 'croissant', 'bagel', 'muffin', 'pav',
-    ]),
-    ItemCategory('pharmacy', 'Pharmacy', keywords: [
-      'medicine', 'tablet', 'paracetamol', 'vitamin', 'prescription',
-      'syrup', 'bandage', 'antiseptic', 'ointment', 'pharmacy',
-    ]),
-    ItemCategory('personal_care', 'Personal Care', keywords: [
-      'shampoo', 'soap', 'toothpaste', 'toothbrush', 'deodorant', 'razor',
-      'conditioner', 'lotion', 'sanitary',
-    ]),
-    ItemCategory('hardware', 'Hardware', keywords: [
-      'screw', 'nail', 'drill', 'hammer', 'wrench', 'bulb', 'tape', 'glue',
-      'wire', 'cable', 'battery', 'batteries', 'paint', 'hex key', 'plug',
-    ]),
-    ItemCategory('admin_errand', 'Admin / Documents', keywords: [
-      'passport', 'license', 'licence', 'rto', 'bank', 'post office',
-      'attestation', 'notary', 'aadhaar', 'pan card', 'document', 'courier',
-    ]),
-    ItemCategory('snacks', 'Snacks', keywords: [
-      'chips', 'biscuit', 'cookie', 'chocolate', 'namkeen', 'snack',
-    ]),
-    ItemCategory('groceries', 'Groceries', keywords: [
-      'rice', 'flour', 'atta', 'sugar', 'salt', 'oil', 'dal', 'lentil',
-      'pasta', 'cereal', 'coffee', 'tea', 'spice', 'eggs', 'egg',
-    ]),
+    ItemCategory(
+      'frozen',
+      'Frozen Foods',
+      perishableByDefault: true,
+      keywords: [
+        'ice cream',
+        'gelato',
+        'frozen',
+        'popsicle',
+        'ice',
+        'kulfi',
+        'sorbet',
+        'peas frozen',
+        'fries',
+      ],
+    ),
+    ItemCategory(
+      'dairy',
+      'Dairy',
+      perishableByDefault: true,
+      keywords: [
+        'milk',
+        'yogurt',
+        'yoghurt',
+        'curd',
+        'cheese',
+        'butter',
+        'paneer',
+        'cream',
+        'ghee',
+        'dahi',
+        'buttermilk',
+      ],
+    ),
+    ItemCategory(
+      'produce',
+      'Fresh Produce',
+      keywords: [
+        'apple',
+        'banana',
+        'tomato',
+        'onion',
+        'potato',
+        'spinach',
+        'lettuce',
+        'carrot',
+        'fruit',
+        'vegetable',
+        'veggies',
+        'lemon',
+        'garlic',
+        'ginger',
+        'coriander',
+        'mango',
+        'grapes',
+        'cucumber',
+      ],
+    ),
+    ItemCategory(
+      'bakery',
+      'Bakery',
+      keywords: ['bread', 'bun', 'cake', 'croissant', 'bagel', 'muffin', 'pav'],
+    ),
+    ItemCategory(
+      'pharmacy',
+      'Pharmacy',
+      keywords: [
+        'medicine',
+        'tablet',
+        'paracetamol',
+        'vitamin',
+        'prescription',
+        'syrup',
+        'bandage',
+        'antiseptic',
+        'ointment',
+        'pharmacy',
+      ],
+    ),
+    ItemCategory(
+      'personal_care',
+      'Personal Care',
+      keywords: [
+        'shampoo',
+        'soap',
+        'toothpaste',
+        'toothbrush',
+        'deodorant',
+        'razor',
+        'conditioner',
+        'lotion',
+        'sanitary',
+      ],
+    ),
+    ItemCategory(
+      'hardware',
+      'Hardware',
+      keywords: [
+        'screw',
+        'nail',
+        'drill',
+        'hammer',
+        'wrench',
+        'bulb',
+        'tape',
+        'glue',
+        'wire',
+        'cable',
+        'battery',
+        'batteries',
+        'paint',
+        'hex key',
+        'plug',
+      ],
+    ),
+    ItemCategory(
+      'admin_errand',
+      'Admin / Documents',
+      keywords: [
+        'passport',
+        'license',
+        'licence',
+        'rto',
+        'bank',
+        'post office',
+        'attestation',
+        'notary',
+        'aadhaar',
+        'pan card',
+        'document',
+        'courier',
+      ],
+    ),
+    ItemCategory(
+      'snacks',
+      'Snacks',
+      keywords: ['chips', 'biscuit', 'cookie', 'chocolate', 'namkeen', 'snack'],
+    ),
+    ItemCategory(
+      'groceries',
+      'Groceries',
+      keywords: [
+        'rice',
+        'flour',
+        'atta',
+        'sugar',
+        'salt',
+        'oil',
+        'dal',
+        'lentil',
+        'pasta',
+        'cereal',
+        'coffee',
+        'tea',
+        'spice',
+        'eggs',
+        'egg',
+      ],
+    ),
     ItemCategory('organic', 'Organic'),
     ItemCategory('health', 'Health'),
     ItemCategory('tools', 'Tools'),
@@ -77,8 +197,9 @@ class ItemCategories {
   /// Best-effort category guess from free text. Matches whole words (or
   /// multi-word phrases) so "creamer" does not become dairy via "cream".
   static ItemCategory classify(String text) {
-    final normalized = ' ${text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')} '
-        .replaceAll(RegExp(r'\s+'), ' ');
+    final normalized =
+        ' ${text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')} '
+            .replaceAll(RegExp(r'\s+'), ' ');
     for (final category in all) {
       for (final keyword in category.keywords) {
         if (normalized.contains(' $keyword ') ||

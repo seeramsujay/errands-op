@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../data/models/todo_item.dart';
 import '../../data/sync/ha_websocket_client.dart';
 import '../../services/geofence_engine.dart';
@@ -41,7 +42,10 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
             const SizedBox(width: 8),
             const Text(
               'op-list',
-              style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: -0.5),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+              ),
             ),
             const Spacer(),
             // Home Assistant status pill
@@ -115,12 +119,19 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
                           ),
                           const Text(
                             'Tap to switch to Learned Walk-Order shopping mode',
-                            style: TextStyle(color: Colors.white70, fontSize: 11),
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.white,
+                      size: 14,
+                    ),
                   ],
                 ),
               ),
@@ -161,7 +172,11 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.check_circle_outline, size: 56, color: Colors.white.withValues(alpha: 0.2)),
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 56,
+                          color: Colors.white.withValues(alpha: 0.2),
+                        ),
                         const SizedBox(height: 12),
                         const Text(
                           'No items in this filter',
@@ -182,7 +197,8 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
                         key: ValueKey(item.id),
                         item: item,
                         index: index,
-                        onToggleComplete: () => state.toggleItemCompleted(item.id),
+                        onToggleComplete: () =>
+                            state.toggleItemCompleted(item.id),
                         onTogglePin: () => state.togglePin(item.id),
                         onDelete: () => state.deleteItem(item.id),
                         onEdit: () => _editItem(context, state, item),
@@ -196,7 +212,9 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: const BoxDecoration(
               color: Color(0xFF0F172A),
-              border: Border(top: BorderSide(color: Color(0xFF334155), width: 1)),
+              border: Border(
+                top: BorderSide(color: Color(0xFF334155), width: 1),
+              ),
             ),
             child: SafeArea(
               top: false,
@@ -238,11 +256,16 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Icon(Icons.navigation_outlined, size: 20),
                       label: Text(
-                        state.isSolving ? 'Optimizing Itinerary...' : "I'm Going Out",
+                        state.isSolving
+                            ? 'Optimizing Itinerary...'
+                            : "I'm Going Out",
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -291,7 +314,8 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
     } else if (state == HaConnectionState.notConfigured) {
       dotColor = const Color(0xFF94A3B8);
       text = 'Local only';
-    } else if (state == HaConnectionState.connecting || state == HaConnectionState.authenticating) {
+    } else if (state == HaConnectionState.connecting ||
+        state == HaConnectionState.authenticating) {
       dotColor = const Color(0xFFF59E0B);
       text = 'Syncing';
     } else if (state == HaConnectionState.error) {
@@ -339,7 +363,11 @@ class _MainErrandScreenState extends State<MainErrandScreen> {
     );
   }
 
-  Future<void> _editItem(BuildContext context, AppState state, TodoItem item) async {
+  Future<void> _editItem(
+    BuildContext context,
+    AppState state,
+    TodoItem item,
+  ) async {
     final draft = await showItemEditorSheet(context, existing: item);
     if (draft == null) return;
     await state.editItem(

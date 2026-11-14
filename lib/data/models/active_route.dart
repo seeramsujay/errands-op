@@ -20,7 +20,8 @@ class ActiveRoute {
     this.warnings = const [],
   });
 
-  bool get hasWarnings => warnings.isNotEmpty || solverStatus == 'RELAXED_CONSTRAINTS';
+  bool get hasWarnings =>
+      warnings.isNotEmpty || solverStatus == 'RELAXED_CONSTRAINTS';
 
   /// Stop that serves [itemId], if any.
   RouteStop? stopForItem(String itemId) {
@@ -61,7 +62,10 @@ class ActiveRoute {
     };
   }
 
-  factory ActiveRoute.fromMap(Map<String, dynamic> map, {List<RouteStop> stops = const []}) {
+  factory ActiveRoute.fromMap(
+    Map<String, dynamic> map, {
+    List<RouteStop> stops = const [],
+  }) {
     return ActiveRoute(
       id: map['id'] as String,
       generatedAt: DateTime.parse(map['generated_at'] as String),

@@ -1,9 +1,11 @@
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
+
 import '../../core/constants.dart';
 import '../models/todo_item.dart';
 import '../models/store.dart';
@@ -58,13 +60,16 @@ class AppDatabase {
   }) async {
     if (_db != null && _db!.isOpen) return;
     if (kIsWeb) {
-      throw UnsupportedError('op-list stores data in SQLite and does not support the web target.');
+      throw UnsupportedError(
+        'op-list stores data in SQLite and does not support the web target.',
+      );
     }
     _inMemory = inMemory;
     _dbName = dbName;
     _pathOverride = path;
 
-    final isDesktop = Platform.isLinux || Platform.isWindows || Platform.isMacOS;
+    final isDesktop =
+        Platform.isLinux || Platform.isWindows || Platform.isMacOS;
     if (isDesktop || inMemory) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
@@ -111,9 +116,18 @@ class AppDatabase {
     if (path != null && path != inMemoryDatabasePath) {
       await deleteDatabase(path);
     }
-    await init(inMemory: _inMemory, dbName: _dbName, seed: false, path: _pathOverride);
+    await init(
+      inMemory: _inMemory,
+      dbName: _dbName,
+      seed: false,
+      path: _pathOverride,
+    );
     for (final row in keep) {
-      await db.insert('settings', row, conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.insert(
+        'settings',
+        row,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     }
     await _seedInitialData();
   }
@@ -274,15 +288,23 @@ class AppDatabase {
     // Indices for Low-Latency Spatial and Status Lookups
     await db.execute('CREATE INDEX idx_items_status ON items(status);');
     await db.execute('CREATE INDEX idx_items_ha_uid ON items(ha_uid);');
-    await db.execute('CREATE INDEX idx_stores_spatial ON stores(latitude, longitude);');
-    await db.execute('CREATE INDEX idx_edges_lookup ON store_layout_edges(store_id, from_item_category);');
-    await db.execute('CREATE INDEX idx_mutations_status ON mutation_queue(status, item_id);');
+    await db.execute(
+      'CREATE INDEX idx_stores_spatial ON stores(latitude, longitude);',
+    );
+    await db.execute(
+      'CREATE INDEX idx_edges_lookup ON store_layout_edges(store_id, from_item_category);',
+    );
+    await db.execute(
+      'CREATE INDEX idx_mutations_status ON mutation_queue(status, item_id);',
+    );
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute('ALTER TABLE items ADD COLUMN ha_uid TEXT;');
-      await db.execute('ALTER TABLE visit_checkoffs ADD COLUMN item_category TEXT;');
+      await db.execute(
+        'ALTER TABLE visit_checkoffs ADD COLUMN item_category TEXT;',
+      );
       await db.execute('''
         UPDATE visit_checkoffs SET item_category =
           (SELECT category FROM items WHERE items.id = visit_checkoffs.item_id);
@@ -298,11 +320,15 @@ class AppDatabase {
       ]) {
         await db.execute('ALTER TABLE route_stops ADD COLUMN $column;');
       }
-      await db.execute('CREATE TABLE settings (key TEXT PRIMARY KEY NOT NULL, value TEXT);');
+      await db.execute(
+        'CREATE TABLE settings (key TEXT PRIMARY KEY NOT NULL, value TEXT);',
+      );
       // v1 databases were seeded already; don't seed again.
       await db.insert('settings', {'key': SettingKeys.seeded, 'value': '1'});
       await db.execute('CREATE INDEX idx_items_ha_uid ON items(ha_uid);');
-      await db.execute('CREATE INDEX idx_mutations_status ON mutation_queue(status, item_id);');
+      await db.execute(
+        'CREATE INDEX idx_mutations_status ON mutation_queue(status, item_id);',
+      );
     }
   }
 
@@ -323,7 +349,13 @@ class AppDatabase {
         openingTimeSec: 32400, // 09:00 AM
         closingTimeSec: 79200, // 10:00 PM
         avgCheckoutDelaySec: 900, // 15 mins
-        supportedCategories: ['groceries', 'dairy', 'frozen', 'produce', 'snacks'],
+        supportedCategories: [
+          'groceries',
+          'dairy',
+          'frozen',
+          'produce',
+          'snacks',
+        ],
       ),
       Store(
         id: 'store_star_bazaar',
@@ -335,7 +367,13 @@ class AppDatabase {
         openingTimeSec: 36000, // 10:00 AM
         closingTimeSec: 75600, // 09:00 PM
         avgCheckoutDelaySec: 600,
-        supportedCategories: ['groceries', 'dairy', 'frozen', 'bakery', 'organic'],
+        supportedCategories: [
+          'groceries',
+          'dairy',
+          'frozen',
+          'bakery',
+          'organic',
+        ],
       ),
       Store(
         id: 'store_apollo',
@@ -454,71 +492,91 @@ class AppDatabase {
     }
 
     // Seed item-store preferences
-    await insertPreference(ItemStorePreference(
-      id: 'pref_1',
-      itemCategory: 'groceries',
-      storeId: 'store_dmart',
-      selectionCount: 12,
-      confidenceScore: 0.85,
-    ));
-    await insertPreference(ItemStorePreference(
-      id: 'pref_2',
-      itemCategory: 'dairy',
-      storeId: 'store_star_bazaar',
-      selectionCount: 8,
-      confidenceScore: 0.75,
-    ));
-    await insertPreference(ItemStorePreference(
-      id: 'pref_3',
-      itemCategory: 'pharmacy',
-      storeId: 'store_apollo',
-      selectionCount: 15,
-      confidenceScore: 0.95,
-    ));
-    await insertPreference(ItemStorePreference(
-      id: 'pref_4',
-      itemCategory: 'hardware',
-      storeId: 'store_hardware',
-      selectionCount: 9,
-      confidenceScore: 0.90,
-    ));
-    await insertPreference(ItemStorePreference(
-      id: 'pref_5',
-      itemCategory: 'admin_errand',
-      storeId: 'store_admin_office',
-      selectionCount: 5,
-      confidenceScore: 1.0,
-    ));
+    await insertPreference(
+      ItemStorePreference(
+        id: 'pref_1',
+        itemCategory: 'groceries',
+        storeId: 'store_dmart',
+        selectionCount: 12,
+        confidenceScore: 0.85,
+      ),
+    );
+    await insertPreference(
+      ItemStorePreference(
+        id: 'pref_2',
+        itemCategory: 'dairy',
+        storeId: 'store_star_bazaar',
+        selectionCount: 8,
+        confidenceScore: 0.75,
+      ),
+    );
+    await insertPreference(
+      ItemStorePreference(
+        id: 'pref_3',
+        itemCategory: 'pharmacy',
+        storeId: 'store_apollo',
+        selectionCount: 15,
+        confidenceScore: 0.95,
+      ),
+    );
+    await insertPreference(
+      ItemStorePreference(
+        id: 'pref_4',
+        itemCategory: 'hardware',
+        storeId: 'store_hardware',
+        selectionCount: 9,
+        confidenceScore: 0.90,
+      ),
+    );
+    await insertPreference(
+      ItemStorePreference(
+        id: 'pref_5',
+        itemCategory: 'admin_errand',
+        storeId: 'store_admin_office',
+        selectionCount: 5,
+        confidenceScore: 1.0,
+      ),
+    );
 
     // Seed initial walk-order layout graph for DMart (Produce -> Bakery -> Dairy -> Frozen)
-    await insertLayoutEdge(StoreLayoutEdge(
-      storeId: 'store_dmart',
-      fromItemCategory: 'produce',
-      toItemCategory: 'dairy',
-      forwardWeight: 0.82,
-      sampleSize: 5,
-    ));
-    await insertLayoutEdge(StoreLayoutEdge(
-      storeId: 'store_dmart',
-      fromItemCategory: 'dairy',
-      toItemCategory: 'frozen',
-      forwardWeight: 0.91,
-      sampleSize: 6,
-    ));
-    await insertLayoutEdge(StoreLayoutEdge(
-      storeId: 'store_dmart',
-      fromItemCategory: 'groceries',
-      toItemCategory: 'frozen',
-      forwardWeight: 0.74,
-      sampleSize: 4,
-    ));
+    await insertLayoutEdge(
+      StoreLayoutEdge(
+        storeId: 'store_dmart',
+        fromItemCategory: 'produce',
+        toItemCategory: 'dairy',
+        forwardWeight: 0.82,
+        sampleSize: 5,
+      ),
+    );
+    await insertLayoutEdge(
+      StoreLayoutEdge(
+        storeId: 'store_dmart',
+        fromItemCategory: 'dairy',
+        toItemCategory: 'frozen',
+        forwardWeight: 0.91,
+        sampleSize: 6,
+      ),
+    );
+    await insertLayoutEdge(
+      StoreLayoutEdge(
+        storeId: 'store_dmart',
+        fromItemCategory: 'groceries',
+        toItemCategory: 'frozen',
+        forwardWeight: 0.74,
+        sampleSize: 4,
+      ),
+    );
   }
-
 
   // --- Settings ---
 
   Future<String?> getSetting(String key) async {
-    final rows = await db.query('settings', where: 'key = ?', whereArgs: [key], limit: 1);
+    final rows = await db.query(
+      'settings',
+      where: 'key = ?',
+      whereArgs: [key],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return rows.first['value'] as String?;
   }
@@ -528,20 +586,16 @@ class AppDatabase {
       await db.delete('settings', where: 'key = ?', whereArgs: [key]);
       return;
     }
-    await db.insert(
-      'settings',
-      {'key': key, 'value': value},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('settings', {
+      'key': key,
+      'value': value,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   // --- CRUD Operations for Items ---
 
   Future<List<TodoItem>> getItems() async {
-    final maps = await db.query(
-      'items',
-      orderBy: 'human_order_index ASC',
-    );
+    final maps = await db.query('items', orderBy: 'human_order_index ASC');
     return maps.map((m) => TodoItem.fromMap(m)).toList();
   }
 
@@ -557,7 +611,12 @@ class AppDatabase {
   }
 
   Future<TodoItem?> getItemByHaUid(String haUid) async {
-    final maps = await db.query('items', where: 'ha_uid = ?', whereArgs: [haUid], limit: 1);
+    final maps = await db.query(
+      'items',
+      where: 'ha_uid = ?',
+      whereArgs: [haUid],
+      limit: 1,
+    );
     if (maps.isEmpty) return null;
     return TodoItem.fromMap(maps.first);
   }
@@ -584,7 +643,10 @@ class AppDatabase {
     for (var i = 0; i < items.length; i++) {
       batch.update(
         'items',
-        {'human_order_index': i, 'updated_at': DateTime.now().toIso8601String()},
+        {
+          'human_order_index': i,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
         where: 'id = ?',
         whereArgs: [items[i].id],
       );
@@ -593,7 +655,9 @@ class AppDatabase {
   }
 
   /// Replace all "Stop #n" overlays: items not in the map lose their badge.
-  Future<void> updateOptimizedIndices(Map<String, int> itemToOptimizedIndex) async {
+  Future<void> updateOptimizedIndices(
+    Map<String, int> itemToOptimizedIndex,
+  ) async {
     final batch = db.batch();
     batch.update('items', {'optimized_order_index': null});
     itemToOptimizedIndex.forEach((itemId, optIndex) {
@@ -608,11 +672,7 @@ class AppDatabase {
   }
 
   Future<void> deleteItem(String id) async {
-    await db.delete(
-      'items',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.delete('items', where: 'id = ?', whereArgs: [id]);
   }
 
   // --- CRUD Operations for Stores ---
@@ -645,8 +705,16 @@ class AppDatabase {
   /// enforced by default in SQLite, so dependants are removed explicitly.
   Future<void> deleteStore(String id) async {
     await db.transaction((txn) async {
-      await txn.delete('item_store_preferences', where: 'store_id = ?', whereArgs: [id]);
-      await txn.delete('store_layout_edges', where: 'store_id = ?', whereArgs: [id]);
+      await txn.delete(
+        'item_store_preferences',
+        where: 'store_id = ?',
+        whereArgs: [id],
+      );
+      await txn.delete(
+        'store_layout_edges',
+        where: 'store_id = ?',
+        whereArgs: [id],
+      );
       await txn.rawDelete(
         'DELETE FROM visit_checkoffs WHERE visit_id IN (SELECT id FROM visits WHERE store_id = ?)',
         [id],
@@ -685,13 +753,15 @@ class AppDatabase {
 
     if (existing.isEmpty) {
       final id = 'pref_${category}_$storeId';
-      await insertPreference(ItemStorePreference(
-        id: id,
-        itemCategory: category,
-        storeId: storeId,
-        selectionCount: 1,
-        confidenceScore: 0.5,
-      ));
+      await insertPreference(
+        ItemStorePreference(
+          id: id,
+          itemCategory: category,
+          storeId: storeId,
+          selectionCount: 1,
+          confidenceScore: 0.5,
+        ),
+      );
     } else {
       final count = (existing.first['selection_count'] as int? ?? 0) + 1;
       final newScore = (count / (count + 2.0)).clamp(0.1, 0.99);
@@ -760,10 +830,14 @@ class AppDatabase {
       ORDER BY vc.checkoff_timestamp ASC
     ''';
     final rows = await db.rawQuery(query, [visitId]);
-    return rows.map((r) => VisitCheckoff.fromMap(
-      r,
-      itemCategory: (r['resolved_category'] as String?) ?? 'generic',
-    )).toList();
+    return rows
+        .map(
+          (r) => VisitCheckoff.fromMap(
+            r,
+            itemCategory: (r['resolved_category'] as String?) ?? 'generic',
+          ),
+        )
+        .toList();
   }
 
   // --- CRUD Operations for Store Layout Graph ---
@@ -842,12 +916,20 @@ class AppDatabase {
 
   /// Drop pending mutations for an item (optionally only for one field) that a
   /// newer local write supersedes. Returns the fields that were removed.
-  Future<Set<String>> discardPendingMutations(String itemId, {String? field}) async {
+  Future<Set<String>> discardPendingMutations(
+    String itemId, {
+    String? field,
+  }) async {
     final where = field == null
         ? "item_id = ? AND status = 'pending'"
         : "item_id = ? AND field = ? AND status = 'pending'";
     final args = field == null ? [itemId] : [itemId, field];
-    final rows = await db.query('mutation_queue', columns: ['field'], where: where, whereArgs: args);
+    final rows = await db.query(
+      'mutation_queue',
+      columns: ['field'],
+      where: where,
+      whereArgs: args,
+    );
     await db.delete('mutation_queue', where: where, whereArgs: args);
     return rows.map((r) => r['field'] as String).toSet();
   }
@@ -862,10 +944,12 @@ class AppDatabase {
   }
 
   Future<bool> hasPendingMutations(String itemId) async {
-    final count = Sqflite.firstIntValue(await db.rawQuery(
-      "SELECT COUNT(*) FROM mutation_queue WHERE item_id = ? AND status = 'pending'",
-      [itemId],
-    ));
+    final count = Sqflite.firstIntValue(
+      await db.rawQuery(
+        "SELECT COUNT(*) FROM mutation_queue WHERE item_id = ? AND status = 'pending'",
+        [itemId],
+      ),
+    );
     return (count ?? 0) > 0;
   }
 
@@ -877,24 +961,32 @@ class AppDatabase {
   Future<void> markMutationFailed(String id) async {
     // SQLite evaluates every SET expression against the old row, so compare
     // the incremented count explicitly.
-    await db.rawUpdate('''
+    await db.rawUpdate(
+      '''
       UPDATE mutation_queue
       SET retry_count = retry_count + 1,
           status = CASE WHEN retry_count + 1 >= ? THEN 'failed' ELSE 'pending' END
       WHERE id = ?
-    ''', [AppConstants.maxMutationRetries, id]);
+    ''',
+      [AppConstants.maxMutationRetries, id],
+    );
   }
 
   Future<int> countFailedMutations() async {
     return Sqflite.firstIntValue(
-          await db.rawQuery("SELECT COUNT(*) FROM mutation_queue WHERE status = 'failed'"),
+          await db.rawQuery(
+            "SELECT COUNT(*) FROM mutation_queue WHERE status = 'failed'",
+          ),
         ) ??
         0;
   }
 
   // --- Geohash Matrix Cache Operations ---
 
-  Future<Map<String, double>?> getCachedMatrix(String originGeohash, String destGeohash) async {
+  Future<Map<String, double>?> getCachedMatrix(
+    String originGeohash,
+    String destGeohash,
+  ) async {
     final rows = await db.query(
       'geohash_matrix_cache',
       where: 'origin_geohash = ? AND dest_geohash = ?',
@@ -906,7 +998,8 @@ class AppDatabase {
     final row = rows.first;
     final cachedAt = DateTime.tryParse(row['cached_at'] as String);
     if (cachedAt == null ||
-        DateTime.now().difference(cachedAt).inDays >= AppConstants.matrixCacheTtlDays) {
+        DateTime.now().difference(cachedAt).inDays >=
+            AppConstants.matrixCacheTtlDays) {
       return null;
     }
 
@@ -922,16 +1015,12 @@ class AppDatabase {
     double distanceMeters,
     double durationSeconds,
   ) async {
-    await db.insert(
-      'geohash_matrix_cache',
-      {
-        'origin_geohash': originGeohash,
-        'dest_geohash': destGeohash,
-        'distance_meters': distanceMeters,
-        'duration_seconds': durationSeconds,
-        'cached_at': DateTime.now().toUtc().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('geohash_matrix_cache', {
+      'origin_geohash': originGeohash,
+      'dest_geohash': destGeohash,
+      'distance_meters': distanceMeters,
+      'duration_seconds': durationSeconds,
+      'cached_at': DateTime.now().toUtc().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 }

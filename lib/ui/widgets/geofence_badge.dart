@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../services/geofence_engine.dart';
 import '../../data/models/store.dart';
 
@@ -32,7 +33,8 @@ class GeofenceBadge extends StatelessWidget {
         bg = const Color(0xFFF59E0B).withValues(alpha: 0.18);
         border = const Color(0xFFF59E0B);
         icon = Icons.timer_outlined;
-        label = 'Dwell ${dwellSeconds}s / 120s (${activeStore?.name ?? "Store"})';
+        label =
+            'Dwell ${dwellSeconds}s / 120s (${activeStore?.name ?? "Store"})';
         break;
       case GeofenceState.insideStore:
         bg = const Color(0xFF10B981).withValues(alpha: 0.2);

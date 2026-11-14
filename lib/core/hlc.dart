@@ -31,7 +31,8 @@ class HlcTimestamp implements Comparable<HlcTimestamp> {
   }
 
   @override
-  String toString() => '$physicalTime:${counter.toString().padLeft(4, '0')}:$nodeId';
+  String toString() =>
+      '$physicalTime:${counter.toString().padLeft(4, '0')}:$nodeId';
 
   @override
   int compareTo(HlcTimestamp other) {
@@ -57,7 +58,8 @@ class HlcTimestamp implements Comparable<HlcTimestamp> {
           nodeId == other.nodeId;
 
   @override
-  int get hashCode => physicalTime.hashCode ^ counter.hashCode ^ nodeId.hashCode;
+  int get hashCode =>
+      physicalTime.hashCode ^ counter.hashCode ^ nodeId.hashCode;
 }
 
 /// Hybrid Logical Clock manager instance
@@ -68,7 +70,7 @@ class HybridLogicalClock {
   int _counter = 0;
 
   HybridLogicalClock({String? nodeId})
-      : nodeId = nodeId ?? 'node_${Random().nextInt(0xFFFFFF).toRadixString(16)}';
+    : nodeId = nodeId ?? 'node_${Random().nextInt(0xFFFFFF).toRadixString(16)}';
 
   /// Generate a new local HLC timestamp
   HlcTimestamp now() {
