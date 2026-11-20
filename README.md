@@ -1,4 +1,21 @@
 <p align="center">
+  <img src="assets/logo.svg" alt="errands-op Logo" width="120" height="120" />
+</p>
+
+<h1 align="center">errands-op</h1>
+
+<p align="center">
+  <em>Flutter errand optimizer with Home Assistant sync and VRP solver</em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Maintained-success?style=flat-square" alt="Status" />
+  <img src="https://img.shields.io/badge/License-Protected-blue?style=flat-square" alt="License" />
+</p>
+
+---
+
+<p align="center">
   <img src="./assets/readme/hero.svg" width="100%" alt="errands-op - The Overpowered Errand Engine">
 </p>
 
